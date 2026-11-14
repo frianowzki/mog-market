@@ -90,6 +90,7 @@ if (!seedOnly) {
 const board = JSON.parse(readFileSync(join(ROOT, "api.json"), "utf8"));
 const rows = board.rows.slice(0, 100); // keep the tx well under block gas limits
 const ids = rows.map(r => keccak256(toHex(r.name)));
+const names = rows.map(r => r.name);
 const ranks = rows.map(r => r.position);
 const deltas = rows.map(r => r.delta ?? 0);
 
@@ -98,7 +99,7 @@ const seedHash = await wallet.writeContract({
   address,
   abi: artifact.abi,
   functionName: "syncBoard",
-  args: [ids, ranks, deltas],
+  args: [ids, names, ranks, deltas],
 });
 console.log("  tx:", CHAIN.blockExplorers.default.url + "/tx/" + seedHash);
 const seedRc = await pub.waitForTransactionReceipt({ hash: seedHash, timeout: 120_000 });

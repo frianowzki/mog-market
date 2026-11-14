@@ -14,8 +14,8 @@ p.on("console", (m) => {
   }
 });
 
-await p.goto(URL, { waitUntil: "networkidle", timeout: 60000 });
-await p.waitForTimeout(2500);
+await p.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
+await p.waitForTimeout(6000);
 
 const probe = await p.evaluate(() => {
   const txt = (sel) => document.querySelector(sel)?.textContent?.trim() ?? null;

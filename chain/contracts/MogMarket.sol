@@ -78,21 +78,28 @@ contract MogMarket {
 
     /// @notice Bulk-sync a whole board snapshot in one tx. Cheap because rank is
     /// the only moving part and we never touch per-holder storage here.
-    function syncBoard(bytes32[] calldata ids, uint16[] calldata ranks, int16[] calldata deltas)
-        external
-        onlyOwner
-    {
+    /// @dev names come along so a seed can register creators in one pass —
+    /// without them the board would render blank tickers.
+    function syncBoard(
+        bytes32[] calldata ids,
+        string[] calldata names,
+        uint16[] calldata ranks,
+        int16[] calldata deltas
+    ) external onlyOwner {
         uint256 n = ids.length;
         if (n == 0) revert EmptyBoard();
-        require(ranks.length == n && deltas.length == n, "length mismatch");
+        require(names.length == n && ranks.length == n && deltas.length == n, "length mismatch");
         for (uint256 i; i < n; ++i) {
             if (ranks[i] == 0) revert BadRank();
             Creator storage c = _creators[ids[i]];
+            bool fresh = !c.exists;
+            c.name = names[i];
             c.rank = ranks[i];
             c.delta = deltas[i];
-            if (!c.exists) {
+            if (fresh) {
                 c.exists = true;
                 _creatorIds.push(ids[i]);
+                emit CreatorRegistered(ids[i], names[i], ranks[i]);
             }
         }
         unchecked { ++snapshotCount; }
