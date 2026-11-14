@@ -3,7 +3,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, usePublicClient } from "wagmi";
 import {
   useBoard, useFluent, useFluentPrice, useTrader, useHoldings,
-  ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf,
+  ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf, GAS_FAUCET_URL,
 } from "./mog.js";
 import { fluentTestnet } from "./chain.js";
 
@@ -29,6 +29,70 @@ const hhmm = (secs) => {
   return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
 };
 
+/* Clipboard that also works on http / non-secure origins (mobile Safari etc.):
+   try the async API, then a selection fallback, and report success honestly. */
+export async function copyText(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch { /* fall through */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch { return false; }
+}
+
+function AddressModal({ address, onClose, onCopied }) {
+  const [done, setDone] = useState(false);
+  return (
+    <div className="modal-scrim" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="modal-h">
+          <span>your fluent testnet address</span>
+          <button className="modal-x" onClick={onClose} aria-label="close">×</button>
+        </div>
+        <p className="modal-p">
+          Long-press or select the address below, then paste it into the{" "}
+          <a href={GAS_FAUCET_URL} target="_blank" rel="noopener noreferrer">Fluent faucet</a>.
+        </p>
+        <code className="modal-code" onClick={async (e) => {
+          const sel = window.getSelection();
+          const r = document.createRange();
+          r.selectNodeContents(e.currentTarget);
+          sel.removeAllRanges();
+          sel.addRange(r);
+          const ok = await copyText(address);
+          if (ok) { setDone(true); onCopied?.(); }
+        }}>{address}</code>
+        <div className="modal-f">
+          <button className="btn ghost" onClick={async () => {
+            const ok = await copyText(address);
+            setDone(ok);
+            if (ok) onCopied?.();
+          }}>{done ? "copied ✓" : "copy address"}</button>
+          <a className="btn primary" href={GAS_FAUCET_URL} target="_blank" rel="noopener noreferrer"
+             style={{ textAlign: "center", textDecoration: "none" }}>
+            open faucet ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Terminal() {
   const { ready, authenticated, login, logout } = usePrivy();
   const { address } = useAccount();
@@ -41,6 +105,7 @@ export function Terminal() {
 
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(null);
+  const [showAddr, setShowAddr] = useState(false);
   const [toast, setToast] = useState(null);
 
   const flash = useCallback((msg, isErr) => {
@@ -74,7 +139,20 @@ export function Terminal() {
     }
   }, [flash]);
 
-  const onClaim = () => wrapped(() => fluent.claim(), "onboarded · 5,000 FLUENT + gas");
+  const onClaim = () => wrapped(async () => {
+    try {
+      await fluent.claim();
+    } catch (e) {
+      const msg = String(e?.shortMessage || e?.message || "");
+      // no gas → point at the official faucet instead of a dead end
+      if (/funds|balance|gas|insufficient/i.test(msg)) {
+        flash("no testnet ETH for gas — opening the Fluent faucet…", true);
+        window.open(GAS_FAUCET_URL, "_blank", "noopener");
+        throw e;
+      }
+      throw e;
+    }
+  }, "requested 5,000 FLUENT");
   const onRefill = () => wrapped(() => fluent.refill(), "requested 5,000 FLUENT");
 
   const onBuy = () => {
@@ -129,8 +207,9 @@ export function Terminal() {
           <div className="deck">
             <p>
               Every creator is a tradable share. Price is <b>1000 ÷ rank</b>, settled in{" "}
-              <b>FLUENT</b> on Fluent Testnet. The faucet gives <b>5,000 FLUENT</b> per request,
-              repeatable every <b>12 hours</b>.
+              <b>FLUENT</b> on Fluent Testnet. Request <b>5,000 FLUENT</b> straight from this page,
+              every <b>12 hours</b>. Gas ETH comes from the{" "}
+              <a href={GAS_FAUCET_URL} target="_blank" rel="noopener noreferrer">Fluent faucet</a>.
             </p>
             <p>
               FLUENT is priced against mainnet: <b>{inUsd(10n ** 18n)}</b> per token{" "}
@@ -246,6 +325,42 @@ export function Terminal() {
               </div>
             </div>
 
+            {address && (
+              <div className="addrbox">
+                <div className="addrbox-h">
+                  <span>your wallet · testnet ETH goes here</span>
+                  <button
+                    onClick={async (e) => {
+                      const ok = await copyText(address);
+                      if (!ok) { setShowAddr(true); return; }
+                      const b2 = e.currentTarget;
+                      b2.textContent = "copied ✓";
+                      setTimeout(() => { b2.textContent = "copy"; }, 1600);
+                    }}
+                  >
+                    copy
+                  </button>
+                </div>
+                <code title="click to copy" onClick={async () => {
+                  const ok = await copyText(address);
+                  if (!ok) { setShowAddr(true); return; }
+                  flash("address copied", false);
+                }}>{address}</code>
+                <div className="addrbox-f">
+                  paste this into the{" "}
+                  <a href={GAS_FAUCET_URL} target="_blank" rel="noopener noreferrer"
+                     onClick={(e) => { if (!copyText(address)) { e.preventDefault(); setShowAddr(true); } }}>
+                    Fluent faucet
+                  </a>{" "}
+                  to get gas ETH ·{" "}
+                  <button className="linkbtn" onClick={() => setShowAddr(true)}>
+                    view / copy address
+                  </button>
+                </div>
+              </div>
+            )}
+
+
             <div className="holdings">
               {holdings.length === 0 ? (
                 <div className="empty">
@@ -269,9 +384,39 @@ export function Terminal() {
             </div>
 
             <div className="side-f">
+              <div className="addrrow">
+                <button className="linkbtn" onClick={() => setShowAddr(true)}>
+                  {address ? "my address: " + address.slice(0, 8) + "…" + address.slice(-6) : "connect wallet"}
+                </button>
+                {address && (
+                  <span className="addrrow-b">
+                    <button onClick={async () => {
+                      const ok = await copyText(address);
+                      if (!ok) { setShowAddr(true); return; }
+                      flash("address copied", false);
+                    }}>copy</button>
+                    <a href={`${EXPLORER}/address/${address}`} target="_blank" rel="noreferrer">scan ↗</a>
+                  </span>
+                )}
+              </div>
+              <a
+                className="btn ghost"
+                href={GAS_FAUCET_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  // auto-copy so the user only has to paste on the faucet page
+                  if (address && !copyText(address)) { e.preventDefault(); setShowAddr(true); return; }
+                  if (address) flash("address copied — paste it into the Fluent faucet", false);
+                }}
+                style={{ display: "block", textAlign: "center", textDecoration: "none" }}
+                title="Opens the Fluent faucet with your address copied to clipboard"
+              >
+                get testnet ETH ↗ {address ? "(address copied)" : ""}
+              </a>
               {!fluent.claimed ? (
                 <button className="btn primary" disabled={busy || !fluent.canClaim} onClick={onClaim}>
-                  {fluent.busy ? "confirming…" : fluent.canClaim ? "claim gas + 5,000 FLUENT" : "faucet ETH pool empty"}
+                  {fluent.busy ? "confirming…" : "request 5,000 FLUENT"}
                 </button>
               ) : (
                 <>
@@ -320,6 +465,13 @@ export function Terminal() {
       )}
 
       {toast && <div className={"toast on" + (toast.isErr ? " err" : "")}>{toast.msg}</div>}
+      {showAddr && address && (
+        <AddressModal
+          address={address}
+          onClose={() => setShowAddr(false)}
+          onCopied={() => flash("address copied — paste it into the Fluent faucet", false)}
+        />
+      )}
     </>
   );
 }
@@ -360,7 +512,20 @@ function TopBar({ authed, address, onLogout, loading, error }) {
         <Health loading={loading} error={error} />
         {authed && address && (
           <span className="acct">
-            {address.slice(0, 6)}…{address.slice(-4)}
+            <button
+              className="copyaddr"
+              onClick={async (e) => {
+                e.stopPropagation();
+                try { await navigator.clipboard.writeText(address); } catch { /* ignore */ }
+                const btn = e.currentTarget;
+                const old = btn.textContent;
+                btn.textContent = "copied ✓";
+                setTimeout(() => { btn.textContent = old; }, 1600);
+              }}
+              title="Copy your wallet address"
+            >
+              {address.slice(0, 6)}…{address.slice(-4)} ⧉
+            </button>
             <button onClick={onLogout}>exit</button>
           </span>
         )}

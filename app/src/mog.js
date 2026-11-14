@@ -12,6 +12,9 @@ const ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS || "").trim();
 const FAUCET = (import.meta.env.VITE_FAUCET_ADDRESS || "").trim();
 const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || "").trim();
 
+/* Official Fluent testnet faucet (ETH for gas). Our contract only drips FLUENT. */
+export const GAS_FAUCET_URL = "https://portal.fluent.xyz/builder/faucet";
+
 /* Mainnet FLUENT reference price (snapshot from deploy-v3.mjs, live-refreshed). */
 export const FALLBACK_FLUENT_USD = Number(import.meta.env.VITE_FLUENT_USD || "") || 0.0476;
 
@@ -168,6 +171,7 @@ export function useFluent(walletAddress) {
 
   const claim = useCallback(() => send(FAUCET, FAUCET_ABI, "claim", []), [send]);
   const refill = useCallback(() => send(FAUCET, FAUCET_ABI, "refillTokens", []), [send]);
+  const requestTokens = claim;
 
   const lastAt = Number(lastReq ?? 0n);
   const cdSecs = Number(cooldown ?? 43_200n);
