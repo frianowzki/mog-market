@@ -1,2 +1,9 @@
 node_modules/
+dist/
 shot-*.png
+.fluent-deployer.json
+chain/deployments.json
+app/.env
+app/.env.local
+
+.vercel
