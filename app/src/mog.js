@@ -8,15 +8,15 @@ import { EXPLORER } from "./chain.js";
 const ABI = artifact.abi;
 const FAUCET_ABI = faucetArtifact.abi;
 
-const ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS || "").trim();
-const FAUCET = (import.meta.env.VITE_FAUCET_ADDRESS || "").trim();
-const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || "").trim();
+const ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "").trim();
+const FAUCET = (process.env.NEXT_PUBLIC_FAUCET_ADDRESS || "").trim();
+const TOKEN = (process.env.NEXT_PUBLIC_TOKEN_ADDRESS || "").trim();
 
 /* Official Fluent testnet faucet (ETH for gas). Our contract only drips FLUENT. */
 export const GAS_FAUCET_URL = "https://portal.fluent.xyz/builder/faucet";
 
 /* Mainnet FLUENT reference price (snapshot from deploy-v3.mjs, live-refreshed). */
-export const FALLBACK_FLUENT_USD = Number(import.meta.env.VITE_FLUENT_USD || "") || 0.0476;
+export const FALLBACK_FLUENT_USD = Number(process.env.NEXT_PUBLIC_FLUENT_USD || "") || 0.0476;
 
 const ERC20 = [
   { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },

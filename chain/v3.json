@@ -1,0 +1,12 @@
+{
+  "token": "0x7007249a5f8de53a2917256778432f3d5db5f097",
+  "faucet": "0xd5588ec631173c8b471a86c3ddf1bb4063096a25",
+  "market": "0xf996f3831b615ac9acb8314cb25b6e96f4e4a8ac",
+  "mainnetPrice": {
+    "symbol": "BLEND",
+    "usd": 0.0476,
+    "source": "cmc:Coinbase Exchange",
+    "at": "2026-11-14T10:59:20.202Z"
+  },
+  "cooldownSeconds": 43200
+}

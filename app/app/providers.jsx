@@ -1,29 +1,36 @@
+"use client";
+
 import { PrivyProvider } from "@privy-io/react-auth";
 import { WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { wagmiConfig } from "./wagmi.js";
-import { fluentTestnet } from "./chain.js";
-import { Terminal } from "./Terminal.jsx";
-import "./styles.css";
+import { useState } from "react";
+import { wagmiConfig } from "../src/wagmi.js";
+import { fluentTestnet } from "../src/chain.js";
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
-});
+const PRIVY_APP_ID = (process.env.NEXT_PUBLIC_PRIVY_APP_ID || "").trim();
 
-const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID || "").trim();
+export default function Providers({ children }) {
+  // QueryClient must be stable per browser session, not shared across requests
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+      })
+  );
 
-export default function App() {
   if (!PRIVY_APP_ID) {
     return (
       <div className="login-wrap">
         <h2>Setup needed</h2>
         <p>
           This build has no Privy App ID. Create an app at{" "}
-          <a href="https://dashboard.privy.io" target="_blank" rel="noreferrer">dashboard.privy.io</a>,
-          enable the X login method, then set <b>VITE_PRIVY_APP_ID</b> and rebuild.
+          <a href="https://dashboard.privy.io" target="_blank" rel="noreferrer">
+            dashboard.privy.io
+          </a>
+          , enable the X login method, then set <b>NEXT_PUBLIC_PRIVY_APP_ID</b> and rebuild.
         </p>
         <p className="num" style={{ fontSize: 11, color: "var(--mute)" }}>
-          optional: VITE_CONTRACT_ADDRESS for the deployed MogMarket
+          optional: NEXT_PUBLIC_CONTRACT_ADDRESS for the deployed MogMarket
         </p>
       </div>
     );
@@ -47,9 +54,7 @@ export default function App() {
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={wagmiConfig}>
-          <Terminal />
-        </WagmiProvider>
+        <WagmiProvider config={wagmiConfig}>{children}</WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
   );

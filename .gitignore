@@ -12,3 +12,10 @@ app/dist/
 app/dist-test/
 
 .env*
+app/.next/
+app/.next
+.next/
+app/src-vite-backup/
+app/test-next.mjs
+app/probe-next.mjs
+app/shot-next.png
