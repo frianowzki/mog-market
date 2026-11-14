@@ -201,7 +201,6 @@ export function Terminal() {
       {error && <div className="banner">Board read failed: {error}</div>}
 
       <header className="mast">
-        <div className="kicker">Motion leaderboard · FLUENT trading · onchain</div>
         <div className="mast-row">
           <h1>Reputations are <i>cheap</i> today.</h1>
           <div className="deck">
@@ -455,9 +454,7 @@ export function Terminal() {
                   <a href={`${EXPLORER}/tx/${fluent.lastTx}`} target="_blank" rel="noreferrer">
                     last tx {String(fluent.lastTx).slice(0, 10)}…
                   </a>
-                ) : (
-                  "FLUENT · fluent testnet"
-                )}
+                ) : null}
               </div>
             </div>
           </aside>
@@ -504,9 +501,7 @@ function NameAvatar({ name, small }) {
 function TopBar({ authed, address, onLogout, loading, error }) {
   return (
     <div className="top">
-      <span>
-        <span className="pulse" /> <b>MOG MARKET</b>
-      </span>
+      <span className="top-l" />
       <span className="mid">FLUENT trading · fluent testnet</span>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Health loading={loading} error={error} />
