@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd app && npx pnpm install --config.strict-dep-builds=false && npx next build",
-  "outputDirectory": "app/.next",
-  "installCommand": "echo 'deps installed during build step'",
-  "framework": "nextjs"
-}
