@@ -1,12 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, usePublicClient } from "wagmi";
-import { formatEther } from "viem";
-import { useBoard, usePaper, ABI, ADDRESS, EXPLORER, usd, idOf } from "./mog.js";
+import {
+  useBoard, useFluent, useFluentPrice, useTrader, useHoldings,
+  ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf,
+} from "./mog.js";
 import { fluentTestnet } from "./chain.js";
-
-const BASE_PRICE = 1000n * 10n ** 18n;
-const priceOf = (rank) => (rank > 0 ? BASE_PRICE / BigInt(rank) : 0n);
 
 function XIcon() {
   return (
@@ -23,12 +22,22 @@ function Health({ loading, error }) {
   return <span className="chain-pill ok">fluent {fluentTestnet.id}</span>;
 }
 
+const hhmm = (secs) => {
+  if (secs <= 0) return "ready";
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+};
+
 export function Terminal() {
-  const { ready, authenticated, user, login, logout } = usePrivy();
-  const { address, isConnected } = useAccount();
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { address } = useAccount();
   const pub = usePublicClient();
   const { rows, loading, error, reload } = useBoard();
-  const paper = usePaper(address);
+  const fluent = useFluent(address);
+  const { usd: fluentUsd, source: priceSource } = useFluentPrice();
+  const trader = useTrader(address, reload);
+  const holdingMap = useHoldings(address, rows, pub);
 
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(null);
@@ -36,7 +45,7 @@ export function Terminal() {
 
   const flash = useCallback((msg, isErr) => {
     setToast({ msg, isErr });
-    setTimeout(() => setToast(null), 4200);
+    setTimeout(() => setToast(null), 4600);
   }, []);
 
   const filtered = useMemo(() => {
@@ -45,28 +54,35 @@ export function Terminal() {
     return rows.filter((r) => r.name.toLowerCase().includes(needle));
   }, [rows, q]);
 
-  const holdingMap = useHoldings(address, rows, pub);
-
   const sel = selected ? rows.find((r) => r.id === selected) : null;
   const selPrice = sel ? priceOf(sel.position) : 0n;
+  const busy = trader.busy || fluent.busy;
+
+  /* USD value of a FLUENT wei amount at the mainnet rate. */
+  const inUsd = (wei) => {
+    const n = Number(fluentUsd) * (Number(wei) / 1e18);
+    const f = n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(2) : n.toFixed(4);
+    return "$" + Number(f).toLocaleString("en-US");
+  };
 
   const wrapped = useCallback(async (fn, label) => {
     try {
       await fn();
       flash(label + " · confirmed", false);
     } catch (e) {
-      flash((e.shortMessage || e.message || "failed").slice(0, 120), true);
+      flash((e.shortMessage || e.message || "failed").slice(0, 130), true);
     }
   }, [flash]);
 
-  const onEnroll = () => wrapped(() => paper.enroll(), "enrolled · $1,000 credited");
+  const onClaim = () => wrapped(() => fluent.claim(), "onboarded · 5,000 FLUENT + gas");
+  const onRefill = () => wrapped(() => fluent.refill(), "requested 5,000 FLUENT");
 
   const onBuy = () => {
     if (!sel) return;
-    const oneUnit = selPrice;
     wrapped(async () => {
-      if (paper.cash < oneUnit) throw new Error("not enough paper cash for 1 unit");
-      await paper.buy(sel.id, 1n, oneUnit);
+      if (fluent.balance < selPrice) throw new Error("not enough FLUENT for 1 unit");
+      await trader.buy(sel.id, 1n, selPrice);
+      await fluent.refetch();
       await reload();
     }, `bought 1 × ${sel.name}`);
   };
@@ -76,7 +92,8 @@ export function Terminal() {
     const held = holdingMap[sel.id]?.units ?? 0n;
     wrapped(async () => {
       if (held === 0n) throw new Error("no units to sell");
-      await paper.sell(sel.id, held);
+      await trader.sell(sel.id, held);
+      await fluent.refetch();
       await reload();
     }, `sold ${sel.name}`);
   };
@@ -90,37 +107,34 @@ export function Terminal() {
     );
   }
 
+  const holdings = Object.values(holdingMap);
+  const bookValue = holdings.reduce((a, h) => a + h.value, 0n);
+  const netWorth = fluent.balance + bookValue;
+
   return (
     <>
-      <TopBar
-        authed={authenticated}
-        address={address}
-        onLogout={logout}
-        loading={loading}
-        error={error}
-      />
+      <TopBar authed={authenticated} address={address} onLogout={logout} loading={loading} error={error} />
 
       {!ADDRESS && (
         <div className="banner">
-          No contract address configured — set VITE_CONTRACT_ADDRESS to a deployed MogMarket
-          and rebuild. The board below will stay empty until then.
+          No contract address configured — set VITE_CONTRACT_ADDRESS and rebuild.
         </div>
       )}
       {error && <div className="banner">Board read failed: {error}</div>}
 
       <header className="mast">
-        <div className="kicker">Motion leaderboard · paper trading · onchain</div>
+        <div className="kicker">Motion leaderboard · FLUENT trading · onchain</div>
         <div className="mast-row">
           <h1>Reputations are <i>cheap</i> today.</h1>
           <div className="deck">
             <p>
-              Every creator is a tradable share. Price is <b>1000 ÷ rank</b>, so a rank move
-              is a price move. You start with <b>$1,000</b> of paper capital, settled by a
-              contract on <b>Fluent Testnet</b>.
+              Every creator is a tradable share. Price is <b>1000 ÷ rank</b>, settled in{" "}
+              <b>FLUENT</b> on Fluent Testnet. The faucet gives <b>5,000 FLUENT</b> per request,
+              repeatable every <b>12 hours</b>.
             </p>
             <p>
-              Sign in with X — a wallet is created for you. Your positions live onchain, not
-              in this tab.
+              FLUENT is priced against mainnet: <b>{inUsd(10n ** 18n)}</b> per token{" "}
+              <span className="num" style={{ color: "var(--mute)", fontSize: 10 }}>({priceSource})</span>.
             </p>
           </div>
         </div>
@@ -129,19 +143,14 @@ export function Terminal() {
       {!authenticated ? (
         <div className="login-wrap">
           <h2>Sign in to trade</h2>
-          <p>
-            {rows.length} creators are on the board. Log in with X to get a wallet and your
-            paper stack.
-          </p>
+          <p>{rows.length} creators are on the board. Log in with X to get a wallet and your FLUENT.</p>
           <button className="x-btn" onClick={login}>
             <XIcon /> Continue with X
           </button>
           {ADDRESS && (
             <p className="num" style={{ fontSize: 10, color: "var(--mute)" }}>
-              contract {ADDRESS.slice(0, 10)}…{ADDRESS.slice(-6)} ·{" "}
-              <a href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noreferrer">
-                fuentscan
-              </a>
+              market {ADDRESS.slice(0, 10)}…{ADDRESS.slice(-6)} ·{" "}
+              <a href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noreferrer">fluentscan</a>
             </p>
           )}
         </div>
@@ -149,9 +158,7 @@ export function Terminal() {
         <div className="shell">
           <main>
             <div className="board-h">
-              <span className="t">
-                price board · {filtered.length}/{rows.length}
-              </span>
+              <span className="t">price board · {filtered.length}/{rows.length}</span>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -171,7 +178,8 @@ export function Terminal() {
                   <tr>
                     <th>#</th>
                     <th>Creator</th>
-                    <th>Price</th>
+                    <th>Price (FLUENT)</th>
+                    <th>USD</th>
                     <th>Rank Δ</th>
                     <th></th>
                   </tr>
@@ -180,6 +188,7 @@ export function Terminal() {
                   {filtered.map((r) => {
                     const held = holdingMap[r.id];
                     const isSel = selected === r.id;
+                    const p = priceOf(r.position);
                     return (
                       <tr
                         key={r.id}
@@ -194,18 +203,16 @@ export function Terminal() {
                             {held && <span className="tag">held</span>}
                           </div>
                         </td>
-                        <td className="price">{usd(priceOf(r.position))}</td>
+                        <td className="price">{fmt(p)}</td>
+                        <td className="num" style={{ color: "var(--mute)", fontSize: 11 }}>{inUsd(p)}</td>
                         <td className={"chg " + (r.delta > 0 ? "u" : r.delta < 0 ? "d" : "f")}>
                           {r.delta === 0 ? "flat" : (r.delta > 0 ? "+" : "") + r.delta}
                         </td>
                         <td className="act">
                           <button
                             className={"buy" + (held ? " own" : "")}
-                            disabled={paper.busy || !paper.enrolled}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelected(r.id);
-                            }}
+                            disabled={busy || !fluent.claimed}
+                            onClick={(e) => { e.stopPropagation(); setSelected(r.id); }}
                           >
                             {held ? "Add" : "Buy"}
                           </button>
@@ -220,51 +227,41 @@ export function Terminal() {
 
           <aside className="side">
             <div className="side-h">
-              <div className="t">net liquidation</div>
-              <div className="v">{usd(paper.equity)}</div>
+              <div className="t">net worth</div>
+              <div className="v">{fmt(netWorth)} FLUENT</div>
               <div className="sub">
-                {Object.keys(holdingMap).length} position
-                {Object.keys(holdingMap).length === 1 ? "" : "s"} · {usd(paper.cash)} cash
+                {holdings.length} position{holdings.length === 1 ? "" : "s"} ·{" "}
+                {fmt(fluent.balance)} FLUENT liquid · ≈ {inUsd(netWorth)}
               </div>
             </div>
 
             <div className="stats">
               <div>
-                <i>cash</i>
-                <b>{usd(paper.cash)}</b>
+                <i>balance</i>
+                <b>{fmt(fluent.balance)}</b>
               </div>
               <div>
-                <i>pnl</i>
-                <b className={paper.equity >= 1000n * 10n ** 18n ? "pos" : "neg"}>
-                  {paper.equity >= 1000n * 10n ** 18n ? "+" : "−"}
-                  {usd(paper.equity > 1000n * 10n ** 18n ? paper.equity - 1000n * 10n ** 18n : 1000n * 10n ** 18n - paper.equity)}
-                </b>
+                <i>in positions</i>
+                <b>{fmt(bookValue)}</b>
               </div>
             </div>
 
             <div className="holdings">
-              {Object.keys(holdingMap).length === 0 ? (
+              {holdings.length === 0 ? (
                 <div className="empty">
-                  <b>Empty book.</b>
-                  Pick a creator on the board and buy in. Price is 1000 ÷ rank, so climbing
-                  the leaderboard pays you.
+                  <b>Empty book.</b> Pick a creator and buy in. Price is 1000 ÷ rank, so climbing pays you.
                 </div>
               ) : (
-                Object.values(holdingMap).map((h) => (
+                holdings.map((h) => (
                   <div key={h.id} className="hold" onClick={() => setSelected(h.id)}>
                     <NameAvatar name={h.name} small />
                     <div className="meta">
                       <div className="nm">{h.name}</div>
-                      <div className="qty">
-                        {h.units.toString()} u @ {usd(priceOf(h.position))}
-                      </div>
+                      <div className="qty">{h.units.toString()} u @ {fmt(priceOf(h.position))}</div>
                     </div>
                     <div>
-                      <div className="val">{usd(h.value)}</div>
-                      <div className={"pl " + (h.pl >= 0n ? "u" : "d")}>
-                        {h.pl >= 0n ? "+" : "−"}
-                        {usd(h.pl >= 0n ? h.pl : -h.pl)}
-                      </div>
+                      <div className="val">{fmt(h.value)}</div>
+                      <div style={{ color: "var(--mute)", fontSize: 11 }}>{inUsd(h.value)}</div>
                     </div>
                   </div>
                 ))
@@ -272,41 +269,49 @@ export function Terminal() {
             </div>
 
             <div className="side-f">
-              {!paper.enrolled ? (
-                <button className="btn primary" disabled={paper.busy} onClick={onEnroll}>
-                  {paper.busy ? "confirming…" : "claim $1,000"}
+              {!fluent.claimed ? (
+                <button className="btn primary" disabled={busy || !fluent.canClaim} onClick={onClaim}>
+                  {fluent.busy ? "confirming…" : fluent.canClaim ? "claim gas + 5,000 FLUENT" : "faucet ETH pool empty"}
                 </button>
               ) : (
                 <>
                   <button
                     className="btn primary"
-                    disabled={paper.busy || !sel || paper.cash < selPrice}
+                    disabled={busy || !sel || fluent.balance < selPrice}
                     onClick={onBuy}
                   >
                     {!sel
                       ? "select a creator"
-                      : paper.busy
-                      ? "confirming…"
-                      : `buy 1 × ${sel.name.slice(0, 14)} · ${usd(selPrice)}`}
+                      : trader.busy
+                        ? "confirming…"
+                        : `buy 1 × ${sel.name.slice(0, 14)} · ${fmt(selPrice)}`}
                   </button>
                   <button
                     className="btn ghost"
-                    disabled={paper.busy || !sel || !holdingMap[sel?.id]}
+                    disabled={busy || !sel || !holdingMap[sel?.id]}
                     onClick={onSell}
                   >
-                    {sel && holdingMap[sel.id]
-                      ? `sell ${holdingMap[sel.id].units} u`
-                      : "sell"}
+                    {sel && holdingMap[sel.id] ? `sell ${holdingMap[sel.id].units} u` : "sell"}
+                  </button>
+                  <button
+                    className="btn ghost"
+                    disabled={busy || fluent.cooldownRemaining > 0}
+                    onClick={onRefill}
+                    title="5,000 FLUENT every 12 hours"
+                  >
+                    {fluent.cooldownRemaining > 0
+                      ? `next request in ${hhmm(fluent.cooldownRemaining)}`
+                      : "request 5,000 FLUENT"}
                   </button>
                 </>
               )}
               <div className="note">
-                {paper.lastTx ? (
-                  <a href={`${EXPLORER}/tx/${paper.lastTx}`} target="_blank" rel="noreferrer">
-                    last tx {paper.lastTx.slice(0, 10)}…
+                {fluent.lastTx || trader.busy ? (
+                  <a href={`${EXPLORER}/tx/${fluent.lastTx}`} target="_blank" rel="noreferrer">
+                    last tx {String(fluent.lastTx).slice(0, 10)}…
                   </a>
                 ) : (
-                  "paper capital · fluent testnet"
+                  "FLUENT · fluent testnet"
                 )}
               </div>
             </div>
@@ -317,55 +322,6 @@ export function Terminal() {
       {toast && <div className={"toast on" + (toast.isErr ? " err" : "")}>{toast.msg}</div>}
     </>
   );
-}
-
-/* Reads units for every visible creator in one multicall-ish batch. */
-function useHoldings(address, rows, pub) {
-  const [map, setMap] = useState({});
-  useEffect(() => {
-    let cancelled = false;
-    if (!address || !pub || !ADDRESS || !rows.length) {
-      setMap({});
-      return;
-    }
-    (async () => {
-      try {
-        const entries = await Promise.all(
-          rows.map(async (r) => {
-            const units = await pub.readContract({
-              address: ADDRESS,
-              abi: ABI,
-              functionName: "unitsOf",
-              args: [address, r.id],
-            });
-            return [r.id, units];
-          })
-        );
-        if (cancelled) return;
-        const next = {};
-        for (const [id, units] of entries) {
-          if (units === 0n) continue;
-          const row = rows.find((r) => r.id === id);
-          if (!row) continue;
-          const price = priceOf(row.position);
-          const value = units * price;
-          next[id] = {
-            id,
-            name: row.name,
-            position: row.position,
-            units,
-            value,
-            pl: value - units * priceOf(row.position),
-          };
-        }
-        setMap(next);
-      } catch {
-        if (!cancelled) setMap({});
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [address, rows, pub]);
-  return map;
 }
 
 function NameAvatar({ name, small }) {
@@ -399,7 +355,7 @@ function TopBar({ authed, address, onLogout, loading, error }) {
       <span>
         <span className="pulse" /> <b>MOG MARKET</b>
       </span>
-      <span className="mid">paper trading · fluent testnet</span>
+      <span className="mid">FLUENT trading · fluent testnet</span>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <Health loading={loading} error={error} />
         {authed && address && (

@@ -1,20 +1,59 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { usePrivy } from "@privy-io/react-auth";
-import { useAccount, usePublicClient, useWalletClient, useReadContract, useReadContracts } from "wagmi";
+import { useState, useEffect, useCallback } from "react";
+import { usePublicClient, useWalletClient, useReadContract } from "wagmi";
 import { keccak256, toHex, formatEther, parseEther } from "viem";
 import artifact from "./MogMarket.json";
+import faucetArtifact from "./MogFaucetV3.json";
 import { EXPLORER } from "./chain.js";
 
 const ABI = artifact.abi;
-const ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS || "").trim();
+const FAUCET_ABI = faucetArtifact.abi;
 
-/* Paper dollars are 18-decimal onchain. Format compactly for the board. */
-const usd = (wei, digits = 2) => {
+const ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS || "").trim();
+const FAUCET = (import.meta.env.VITE_FAUCET_ADDRESS || "").trim();
+const TOKEN = (import.meta.env.VITE_TOKEN_ADDRESS || "").trim();
+
+/* Mainnet FLUENT reference price (snapshot from deploy-v3.mjs, live-refreshed). */
+export const FALLBACK_FLUENT_USD = Number(import.meta.env.VITE_FLUENT_USD || "") || 0.0476;
+
+const ERC20 = [
+  { type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "allowance", stateMutability: "view", inputs: [{ name: "o", type: "address" }, { name: "s", type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "approve", stateMutability: "nonpayable", inputs: [{ name: "s", type: "address" }, { name: "v", type: "uint256" }], outputs: [{ type: "bool" }] },
+];
+
+/* FLUENT is 18-decimal. Show token units, plus a USD line at the live rate. */
+const fmt = (wei, digits = 2) => {
   const n = Number(formatEther(wei ?? 0n));
-  if (n >= 1000) return "$" + n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  return "$" + n.toFixed(digits);
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
+  if (n >= 1000) return n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return n.toFixed(digits);
 };
 const idOf = (name) => keccak256(toHex(name));
+
+export const BASE_PRICE = 1000n * 10n ** 18n;
+export const priceOf = (rank) => (rank > 0 ? BASE_PRICE / BigInt(rank) : 0n);
+
+/* ---------- mainnet reference price ---------- */
+
+export function useFluentPrice() {
+  const [usd, setUsd] = useState(FALLBACK_FLUENT_USD);
+  const [source, setSource] = useState("deploy snapshot");
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const r = await fetch("https://api.dexscreener.com/tokens/v1/ethereum/0xd8A271974E8EdAE9D7b58e3370dc1669427503F4");
+        const pairs = await r.json();
+        const best = (Array.isArray(pairs) ? pairs : []).sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+        if (live && best?.priceUsd) { setUsd(Number(best.priceUsd)); setSource("mainnet · dexscreener"); }
+      } catch { /* keep snapshot */ }
+    })();
+    return () => { live = false; };
+  }, []);
+  return { usd, source };
+}
+
+/* ---------- board ---------- */
 
 export function useBoard() {
   const pub = usePublicClient();
@@ -40,13 +79,7 @@ export function useBoard() {
       );
       const out = ids.map((id, i) => {
         const m = metas[i];
-        return {
-          id,
-          name: m.name,
-          position: Number(m.rank),
-          delta: Number(m.delta),
-          exists: m.exists,
-        };
+        return { id, name: m.name, position: Number(m.rank), delta: Number(m.delta), exists: m.exists };
       }).filter((r) => r.exists && r.position > 0);
       out.sort((a, b) => a.position - b.position);
       setRows(out);
@@ -58,88 +91,184 @@ export function useBoard() {
   }, [pub]);
 
   useEffect(() => { load(); }, [load]);
-
   return { rows, loading, error, reload: load };
 }
 
-export function usePaper(walletAddress) {
+/* ---------- wallet: FLUENT balance + faucet (5k / 12 h) ---------- */
+
+export function useFluent(walletAddress) {
   const pub = usePublicClient();
   const { data: wallet } = useWalletClient();
   const [busy, setBusy] = useState(false);
   const [txError, setTxError] = useState(null);
   const [lastTx, setLastTx] = useState(null);
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
-  const { data: enrolled, refetch: refetchEnrolled } = useReadContract({
-    address: ADDRESS || undefined,
-    abi: ABI,
-    functionName: "enrolled",
+  useEffect(() => {
+    const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 15_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const hasWallet = Boolean(walletAddress);
+  const hasFaucet = Boolean(FAUCET && walletAddress);
+
+  const { data: balance, refetch: refetchBal } = useReadContract({
+    address: TOKEN || undefined, abi: ERC20, functionName: "balanceOf",
     args: walletAddress ? [walletAddress] : undefined,
-    query: { enabled: Boolean(ADDRESS && walletAddress) },
+    query: { enabled: Boolean(TOKEN && hasWallet), refetchInterval: 20_000 },
   });
 
-  const { data: cashRaw, refetch: refetchCash } = useReadContract({
-    address: ADDRESS || undefined,
-    abi: ABI,
-    functionName: "cash",
+  const { data: claimed, refetch: refetchClaimed } = useReadContract({
+    address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "claimed",
     args: walletAddress ? [walletAddress] : undefined,
-    query: { enabled: Boolean(ADDRESS && walletAddress) },
+    query: { enabled: hasFaucet },
   });
 
-  const { data: equityRaw, refetch: refetchEquity } = useReadContract({
-    address: ADDRESS || undefined,
-    abi: ABI,
-    functionName: "equityOf",
+  const { data: canClaim, refetch: refetchCanClaim } = useReadContract({
+    address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "canClaim",
     args: walletAddress ? [walletAddress] : undefined,
-    query: { enabled: Boolean(ADDRESS && walletAddress) },
+    query: { enabled: hasFaucet },
+  });
+
+  const { data: lastReq, refetch: refetchLast } = useReadContract({
+    address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "lastRequestAt",
+    args: walletAddress ? [walletAddress] : undefined,
+    query: { enabled: hasFaucet },
+  });
+
+  const { data: cooldown } = useReadContract({
+    address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "cooldown",
+    query: { enabled: Boolean(FAUCET) },
+  });
+
+  const { data: dripTok } = useReadContract({
+    address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "tokenDripAmount",
+    query: { enabled: Boolean(FAUCET) },
   });
 
   const refetchAll = useCallback(async () => {
-    await Promise.all([refetchEnrolled(), refetchCash(), refetchEquity()]);
-  }, [refetchEnrolled, refetchCash, refetchEquity]);
+    await Promise.all([refetchBal(), refetchClaimed(), refetchCanClaim(), refetchLast()]);
+  }, [refetchBal, refetchClaimed, refetchCanClaim, refetchLast]);
 
-  const send = useCallback(async (fn, args, value) => {
+  const send = useCallback(async (address, abi, fn, args) => {
     if (!wallet || !walletAddress) throw new Error("wallet not ready");
-    setBusy(true);
-    setTxError(null);
+    setBusy(true); setTxError(null);
     try {
-      const hash = await wallet.writeContract({
-        address: ADDRESS,
-        abi: ABI,
-        functionName: fn,
-        args,
-        ...(value ? { value } : {}),
-        account: wallet.account,
-      });
+      const hash = await wallet.writeContract({ address, abi, functionName: fn, args, account: wallet.account });
       setLastTx(hash);
-      const rc = await pub.waitForTransactionReceipt({ hash, timeout: 90_000 });
+      const rc = await pub.waitForTransactionReceipt({ hash, timeout: 120_000 });
       if (rc.status !== "success") throw new Error("transaction reverted");
       await refetchAll();
       return hash;
     } catch (e) {
-      const msg = e.shortMessage || e.message || "tx failed";
-      setTxError(msg);
+      setTxError(e.shortMessage || e.message || "tx failed");
       throw e;
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }, [wallet, walletAddress, pub, refetchAll]);
 
-  const enroll = useCallback(() => send("enroll", []), [send]);
-  const buy = useCallback((id, units, costWei) => send("buy", [id, units], costWei), [send]);
-  const sell = useCallback((id, units) => send("sell", [id, units]), [send]);
+  const claim = useCallback(() => send(FAUCET, FAUCET_ABI, "claim", []), [send]);
+  const refill = useCallback(() => send(FAUCET, FAUCET_ABI, "refillTokens", []), [send]);
+
+  const lastAt = Number(lastReq ?? 0n);
+  const cdSecs = Number(cooldown ?? 43_200n);
+  const nextAt = lastAt ? lastAt + cdSecs : 0;
+  const remaining = nextAt > now ? nextAt - now : 0;
 
   return {
-    enrolled: Boolean(enrolled),
-    cash: cashRaw ?? 0n,
-    equity: equityRaw ?? 0n,
-    busy,
-    txError,
-    lastTx,
-    enroll,
-    buy,
-    sell,
-    refetch: refetchAll,
+    token: TOKEN,
+    balance: balance ?? 0n,
+    claimed: Boolean(claimed),
+    canClaim: Boolean(canClaim),
+    drip: dripTok ?? 0n,
+    cooldownSeconds: cdSecs,
+    nextRequestAt: nextAt,
+    cooldownRemaining: remaining,
+    now,
+    busy, txError, lastTx,
+    claim, refill, send, refetch: refetchAll,
   };
 }
 
-export { ABI, ADDRESS, EXPLORER, usd, idOf, formatEther, parseEther };
+/* ---------- trading: approve + buy/sell ---------- */
+
+export function useTrader(walletAddress, onDone) {
+  const pub = usePublicClient();
+  const { data: wallet } = useWalletClient();
+  const [busy, setBusy] = useState(false);
+  const [txError, setTxError] = useState(null);
+
+  const run = useCallback(async (address, abi, fn, args) => {
+    if (!wallet || !walletAddress) throw new Error("wallet not ready");
+    const hash = await wallet.writeContract({ address, abi, functionName: fn, args, account: wallet.account });
+    const rc = await pub.waitForTransactionReceipt({ hash, timeout: 120_000 });
+    if (rc.status !== "success") throw new Error("transaction reverted");
+    return hash;
+  }, [wallet, walletAddress, pub]);
+
+  const buy = useCallback(async (id, units, cost) => {
+    setBusy(true); setTxError(null);
+    try {
+      const allowance = await pub.readContract({
+        address: TOKEN, abi: ERC20, functionName: "allowance", args: [walletAddress, ADDRESS],
+      });
+      if (allowance < cost) await run(TOKEN, ERC20, "approve", [ADDRESS, (1n << 256n) - 1n]);
+      const hash = await run(ADDRESS, ABI, "buy", [id, units]);
+      await onDone?.();
+      return hash;
+    } catch (e) {
+      setTxError(e.shortMessage || e.message || "buy failed");
+      throw e;
+    } finally { setBusy(false); }
+  }, [pub, run, walletAddress, onDone]);
+
+  const sell = useCallback(async (id, units) => {
+    setBusy(true); setTxError(null);
+    try {
+      const hash = await run(ADDRESS, ABI, "sell", [id, units]);
+      await onDone?.();
+      return hash;
+    } catch (e) {
+      setTxError(e.shortMessage || e.message || "sell failed");
+      throw e;
+    } finally { setBusy(false); }
+  }, [run, onDone]);
+
+  return { buy, sell, busy, txError };
+}
+
+/* ---------- holdings ---------- */
+
+export function useHoldings(address, rows, pub) {
+  const [map, setMap] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    if (!address || !pub || !ADDRESS || !rows.length) { setMap({}); return; }
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          rows.map(async (r) => {
+            const units = await pub.readContract({
+              address: ADDRESS, abi: ABI, functionName: "unitsOf", args: [address, r.id],
+            });
+            return [r.id, units];
+          })
+        );
+        if (cancelled) return;
+        const next = {};
+        for (const [id, units] of entries) {
+          if (units === 0n) continue;
+          const row = rows.find((r) => r.id === id);
+          if (!row) continue;
+          next[id] = { id, name: row.name, position: row.position, units, value: units * priceOf(row.position) };
+        }
+        setMap(next);
+      } catch {
+        if (!cancelled) setMap({});
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [address, rows, pub]);
+  return map;
+}
+
+export { ABI, FAUCET_ABI, ADDRESS, FAUCET, TOKEN, ERC20, EXPLORER, fmt as usd, fmt, idOf, formatEther, parseEther };
