@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount, usePublicClient } from "wagmi";
 import {
-  useBoard, useFluent, useFluentPrice, useTrader, useHoldings,
-  ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf, GAS_FAUCET_URL,
+  useBoard, useFluent, useFluentPrice, useTrader, useHoldings, useMotionMeta,
+  ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf, GAS_FAUCET_URL, PFP_URL,
 } from "./mog.js";
 
 function XIcon() {
@@ -94,6 +94,8 @@ export function Terminal() {
   const { usd: fluentUsd, source: priceSource } = useFluentPrice();
   const trader = useTrader(address, reload);
   const holdingMap = useHoldings(address, rows, pub);
+  const motion = useMotionMeta();
+  const metaOf = useCallback((nm) => motion[(nm || "").trim().toLowerCase()] || null, [motion]);
 
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(null);
@@ -268,7 +270,7 @@ export function Terminal() {
                         <td className="rank num">{r.position}</td>
                         <td>
                           <div className="who">
-                            <NameAvatar name={r.name} />
+                            <NameAvatar name={r.name} uuid={metaOf(r.name)?.uuid} />
                             <span className="nm">{r.name}</span>
                             {held && <span className="tag">held</span>}
                           </div>
@@ -360,7 +362,7 @@ export function Terminal() {
               ) : (
                 holdings.map((h) => (
                   <div key={h.id} className="hold" onClick={() => setSelected(h.id)}>
-                    <NameAvatar name={h.name} small />
+                    <NameAvatar name={h.name} uuid={metaOf(h.name)?.uuid} small />
                     <div className="meta">
                       <div className="nm">{h.name}</div>
                       <div className="qty">{h.units.toString()} u @ {fmt(priceOf(h.position))}</div>
@@ -465,27 +467,43 @@ export function Terminal() {
   );
 }
 
-function NameAvatar({ name, small }) {
-  const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+function NameAvatar({ name, uuid, small }) {
+  const [failed, setFailed] = useState(false);
+  const size = small ? 22 : 26;
+  const initials = (name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  for (const ch of name || "") h = (h * 31 + ch.charCodeAt(0)) % 360;
+
+  const showImg = uuid && !failed;
   return (
     <span
       style={{
-        width: small ? 22 : 26,
-        height: small ? 22 : 26,
+        width: size,
+        height: size,
         flex: "none",
         borderRadius: 2,
         display: "grid",
         placeItems: "center",
-        background: `hsl(${h} 10% 86%)`,
+        overflow: "hidden",
+        background: showImg ? "var(--paper2)" : `hsl(${h} 10% 86%)`,
         color: `hsl(${h} 22% 34%)`,
         fontFamily: "Archivo,sans-serif",
         fontSize: small ? 9 : 10,
         fontWeight: 600,
       }}
     >
-      {initials}
+      {showImg ? (
+        <img
+          src={PFP_URL(uuid)}
+          alt={name}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        />
+      ) : (
+        initials
+      )}
     </span>
   );
 }

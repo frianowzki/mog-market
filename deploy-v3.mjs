@@ -125,7 +125,7 @@ const market = await deploy("MogMarketV2", [token.address]);
 gasTotal += market.gas;
 
 const apiPath = join(ROOT, "api.json");
-const creators = existsSync(apiPath) ? JSON.parse(readFileSync(apiPath, "utf8")).rows.slice(0, 60) : [];
+const creators = existsSync(apiPath) ? JSON.parse(readFileSync(apiPath, "utf8")).rows : [];
 const ids = creators.map((c) => keccak256(toBytes(c.name)));
 const names = creators.map((c) => c.name);
 const ranks = creators.map((c, i) => Number(c.position) || i + 1);

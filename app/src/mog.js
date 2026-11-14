@@ -36,7 +36,39 @@ const idOf = (name) => keccak256(toHex(name));
 export const BASE_PRICE = 1000n * 10n ** 18n;
 export const priceOf = (rank) => (rank > 0 ? BASE_PRICE / BigInt(rank) : 0n);
 
-/* ---------- mainnet reference price ---------- */
+/* ---------- Motion leaderboard: display names + profile pictures ----------
+   The on-chain struct only stores name/rank/delta, so identity art comes from
+   the public Motion feed. Creator uuid is NOT derivable from the on-chain id
+   (that's keccak256(name)), so we key the feed by lowercased name. */
+
+const MOTION_API = "https://leaderboard.motion.game/api/leaderboard";
+export const PFP_URL = (uuid) => `https://leaderboard.motion.game/pfp/${uuid}.jpg`;
+
+export function useMotionMeta() {
+  const [meta, setMeta] = useState({});   // lowercase name -> { uuid, name, position }
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(MOTION_API, { headers: { accept: "application/json" } });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!alive || !Array.isArray(d.rows)) return;
+        const next = {};
+        for (const row of d.rows) {
+          if (!row?.name) continue;
+          next[row.name.trim().toLowerCase()] = {
+            uuid: row.id, name: row.name, position: Number(row.position) || 0,
+          };
+        }
+        setMeta(next);
+      } catch { /* offline / blocked → initials fallback */ }
+    })();
+    return () => { alive = false; };
+  }, []);
+  return meta;
+}
+
 
 export function useFluentPrice() {
   const [usd, setUsd] = useState(FALLBACK_FLUENT_USD);
