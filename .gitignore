@@ -7,3 +7,6 @@ app/.env
 app/.env.local
 
 .vercel
+app/dist-live/
+app/dist/
+app/dist-test/
