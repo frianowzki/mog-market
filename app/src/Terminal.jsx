@@ -5,7 +5,6 @@ import {
   useBoard, useFluent, useFluentPrice, useTrader, useHoldings,
   ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf, GAS_FAUCET_URL,
 } from "./mog.js";
-import { fluentTestnet } from "./chain.js";
 
 function XIcon() {
   return (
@@ -13,13 +12,6 @@ function XIcon() {
       <path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-4.9-6.4L6.2 22H3.1l7.3-8.3L1 2h6.5l4.4 5.9L18.9 2Zm-1.1 18h1.7L7.3 3.9H5.5L17.8 20Z" />
     </svg>
   );
-}
-
-function Health({ loading, error }) {
-  if (loading) return <span className="chain-pill">reading…</span>;
-  if (error) return <span className="chain-pill bad">chain error</span>;
-  if (!ADDRESS) return <span className="chain-pill bad">no contract</span>;
-  return <span className="chain-pill ok">fluent {fluentTestnet.id}</span>;
 }
 
 const hhmm = (secs) => {
@@ -191,7 +183,7 @@ export function Terminal() {
 
   return (
     <>
-      <TopBar authed={authenticated} address={address} onLogout={logout} loading={loading} error={error} />
+      <TopBar authed={authenticated} address={address} onLogout={logout} />
 
       {!ADDRESS && (
         <div className="banner">
@@ -498,20 +490,19 @@ function NameAvatar({ name, small }) {
   );
 }
 
-function TopBar({ authed, address, onLogout, loading, error }) {
+function TopBar({ authed, address, onLogout }) {
   return (
     <div className="top">
       <span className="top-l" />
-      <span className="mid">FLUENT trading · fluent testnet</span>
-      <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Health loading={loading} error={error} />
+      <span className="top-r">
         {authed && address && (
           <span className="acct">
             <button
               className="copyaddr"
               onClick={async (e) => {
                 e.stopPropagation();
-                try { await navigator.clipboard.writeText(address); } catch { /* ignore */ }
+                const ok = await copyText(address);
+                if (!ok) return;
                 const btn = e.currentTarget;
                 const old = btn.textContent;
                 btn.textContent = "copied ✓";
