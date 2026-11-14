@@ -10,3 +10,5 @@ app/.env.local
 app/dist-live/
 app/dist/
 app/dist-test/
+
+.env*
