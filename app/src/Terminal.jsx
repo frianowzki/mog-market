@@ -189,7 +189,7 @@ export function Terminal() {
 
       {!ADDRESS && (
         <div className="banner">
-          No contract address configured — set VITE_CONTRACT_ADDRESS and rebuild.
+          No contract address configured — set NEXT_PUBLIC_CONTRACT_ADDRESS and rebuild.
         </div>
       )}
       {error && <div className="banner">Board read failed: {error}</div>}
