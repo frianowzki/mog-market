@@ -14,3 +14,6 @@ export const fluentTestnet = defineChain({
 });
 
 export const EXPLORER = fluentTestnet.blockExplorers.default.url;
+
+/* Official assets for the contracts panel. */
+export const FLUENTSCAN_LOGO = "/fluentscan.svg";
