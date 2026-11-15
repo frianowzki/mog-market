@@ -45,9 +45,28 @@ export async function GET() {
       history = [...history, snap].slice(-MAX_POINTS);
     }
 
+    /* Seed a real second point from the delta Motion already ships: each row's
+       delta says how many places it moved since baselineCapturedAt, so rank at
+       baseline is position - delta and price at baseline is 1000 / that. Two
+       genuine timestamps, no invented data — sparklines draw a true line from
+       day one instead of waiting hours for the archive to fill. */
+    const seedAt = d.baselineCapturedAt || null;
+    const seed = seedAt && seedAt !== at
+      ? {
+        at: seedAt,
+        rows: rows.map((x) => ({
+          name: String(x.name || "").trim().toLowerCase(),
+          label: x.name,
+          position: Math.max(1, (Number(x.position) || 0) - (Number(x.delta) || 0)),
+          delta: 0,
+        })),
+      }
+      : null;
+    const full = seed ? [seed, ...history] : history;
+
     /* Per-creator series of price (1000/rank) and rank. */
     const byName = new Map();
-    for (const h of history) {
+    for (const h of full) {
       for (const row of h.rows) {
         if (!byName.has(row.name)) byName.set(row.name, { name: row.label || row.name, points: [] });
         if (row.position > 0) {
@@ -63,8 +82,8 @@ export async function GET() {
     return Response.json(
       {
         capturedAt: at,
-        points: history.length,
-        window: history.length ? { from: history[0].at, to: history[history.length - 1].at } : null,
+        points: full.length,
+        window: full.length ? { from: full[0].at, to: full[full.length - 1].at } : null,
         series: Object.fromEntries(byName),
       },
       { headers: { "cache-control": "public, s-maxage=30, stale-while-revalidate=120" } }

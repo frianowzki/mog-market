@@ -25,6 +25,7 @@ const I = {
   drip: "M12 3s6 6.4 6 10.5A6 6 0 016 13.5C6 9.4 12 3 12 3z",
   logout: "M15 17l5-5-5-5M20 12H9M12 19H6a2 2 0 01-2-2V7a2 2 0 012-2h6",
   copy: "M9 9h9v9a2 2 0 01-2 2H9a2 2 0 01-2-2V9zM6 15H5a2 2 0 01-2-2V5a2 2 0 012-2h8a2 2 0 012 2v1",
+  check: "M20 6L9 17l-5-5",
   ext: "M14 4h6v6M20 4l-8 8M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4",
   search: "M11 18a7 7 0 100-14 7 7 0 000 14zM20 20l-4.2-4.2",
   up: "M12 19V5M6 11l6-6 6 6",
@@ -55,6 +56,9 @@ function TikTokIcon() {
 }
 function TwitchIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 2l-2 3v15h4v-2h3l3 3h4l4-4V2H4zm16 12l-2 2h-3l-3 3v-3H8V4h12v10zM13 7h2v5h-2V7zm-4 0h2v5H9V7z" /></svg>;
+}
+function KickIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h5v5h2V6h2V3h5v6h-2v2h-2v2h2v2h2v6h-5v-3h-2v-2H9v5H4V3z" /></svg>;
 }
 
 const hhmm = (secs) => {
@@ -88,7 +92,18 @@ const NETWORKS = [
   { k: "instagram", base: "https://instagram.com/", label: "Instagram" },
   { k: "tiktok", base: "https://tiktok.com/", label: "TikTok" },
   { k: "twitch", base: "https://twitch.tv/", label: "Twitch" },
+  { k: "kick", base: "https://kick.com/", label: "Kick" },
 ];
+
+/* Official fluentscan mark, inlined so it inherits the theme colour instead of
+   shipping a raster. Used on every contract row and the explorer card. */
+const FluentScanMark = ({ size = 18 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" aria-hidden="true">
+    <circle cx="10.5" cy="10.5" r="6.6" stroke="currentColor" strokeWidth="2" />
+    <path d="M15.4 15.4 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M7.2 11.6c1.6-1.3 3-1.3 4.6 0 1.6 1.3 3 1.3 4.6 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
 
 /* Links for a creator, icons only. Verified feed socials win, curated handles
    next, and an X search (dimmed) as a last resort so the row is never empty. */
@@ -114,7 +129,8 @@ function socialLinks(name, metaSocials) {
 
 const SocGlyph = ({ k }) =>
   k === "youtube" ? <YouTubeIcon /> : k === "instagram" ? <InstagramIcon />
-    : k === "tiktok" ? <TikTokIcon /> : k === "twitch" ? <TwitchIcon /> : <XIcon />;
+    : k === "tiktok" ? <TikTokIcon /> : k === "twitch" ? <TwitchIcon />
+      : k === "kick" ? <KickIcon /> : <XIcon />;
 
 /* Sidebar order. Feed first: it is the dashboard you land on to read the board,
    markets is where you actually trade. */
@@ -179,8 +195,9 @@ function NameAvatar({ name, uuid, size = 26 }) {
 }
 
 /* Desktop hover card: avatar scales up, details card drops beside it with rank,
-   price and the creator's socials as official glyphs (no "find on X" copy). */
-function CreatorCell({ row, price, fiat, held, socials, onOpen }) {
+   price and the creator's socials as official glyphs (no "find on X" copy).
+   Hover is discovery only — no buy button; clicking the row opens the ticket. */
+function CreatorCell({ row, price, fiat, held, socials }) {
   const [hot, setHot] = useState(false);
   const links = socialLinks(row.name, socials);
   return (
@@ -218,9 +235,6 @@ function CreatorCell({ row, price, fiat, held, socials, onOpen }) {
             </a>
           ))}
         </div>
-        <button className="hcard-cta" onClick={(e) => { e.stopPropagation(); onOpen(); }}>
-          open trade ticket →
-        </button>
       </div>
     </div>
   );
@@ -319,28 +333,55 @@ function AddressModal({ address, onClose, onCopied }) {
 
 /* Official contract panel: every row carries the Fluent mark and links out to
    that contract on fluentscan. */
+/* Contract rows: a real fluentscan card, not a bare address. The logo is the
+   official mark, the whole row opens the address on the explorer, and the copy
+   button sits beside the link so you can grab the address without leaving. */
 function ContractRow({ label, addr, note }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (await copyText(addr)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    }
+  };
   const inner = (
     <>
-      <span className="mark"><img src="/brand/fluentscan-180.png" alt="" width="30" height="30" /></span>
+      <span className="mark">
+        <FluentScanMark size={17} />
+      </span>
       <span className="ctxt">
         <i>{label}</i>
-        <b>{addr ? `${addr.slice(0, 10)}…${addr.slice(-8)}` : "not configured"}</b>
+        <b className="num">{addr ? `${addr.slice(0, 10)}…${addr.slice(-8)}` : "not configured"}</b>
         <span>{note}</span>
       </span>
-      {addr && <Icon d={I.ext} width="13" height="13" />}
+      {addr && (
+        <span className="cacts">
+          <button className="ccopy" onClick={copy} title={copied ? "copied" : "copy address"} aria-label="copy address">
+            {copied ? <Icon d={I.check} width="12" height="12" /> : <Icon d={I.copy} width="12" height="12" />}
+          </button>
+          <span className="cext"><Icon d={I.ext} width="12" height="12" /></span>
+        </span>
+      )}
     </>
   );
   return addr
-    ? <a className="crow" href={`${EXPLORER}/address/${addr}`} target="_blank" rel="noopener noreferrer">{inner}</a>
+    ? <a className="crow" href={`${EXPLORER}/address/${addr}`} target="_blank" rel="noopener noreferrer" title={`Open ${addr} on fluentscan`}>{inner}</a>
     : <div className="crow">{inner}</div>;
 }
 
 /* ------------------------------------------------------------------ terminal */
 
 export function Terminal() {
-  const { ready, authenticated, login, logout } = usePrivy();
-  const { address } = useAccount();
+  const privy = usePrivy();
+  /* DEV_SHOT: screenshot-only bypass, active only with ?shot=1 in the URL. */
+  const devShot = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("shot") === "1";
+  const ready = privy.ready || devShot;
+  const authenticated = privy.authenticated || devShot;
+  const { login, logout } = privy;
+  const { address: realAddress } = useAccount();
+  const address = realAddress || (devShot ? "0x7007249a5f8de53a2917256778432f3d5db5f097" : undefined);
   const pub = usePublicClient();
   const theme = useTheme();
   const feed = useBoardFeed(3000);
@@ -543,6 +584,7 @@ export function Terminal() {
       onRefill={onRefill}
       metaOf={metaOf}
       currency={currency}
+      SYMBOL={SYMBOL}
       onClose={() => setSheet(false)}
       sheet={sheet}
     />
@@ -550,7 +592,11 @@ export function Terminal() {
 
   return (
     <>
-      <TopBar theme={theme} authed={authenticated} syncedAt={syncedAt} />
+      <TopBar
+        theme={theme}
+        authed={authenticated}
+        syncedAt={syncedAt}
+      />
 
       {!ADDRESS && (
         <div className="banner">
@@ -604,29 +650,26 @@ export function Terminal() {
               </div>
             </div>
 
-            {/* faucet + theme + address + disconnect live here, not in the navbar */}
+            {/* anything transactional lives down here, out of the top bar:
+                faucet, wallet, disconnect. The bar keeps brand + status + the
+                theme switch, so it reads as a plain navbar. */}
             <div className="rail-utils">
-              <ThemeSwitch mode={theme.mode} pick={theme.pick} />
               <button
                 className={"rail-faucet" + (fluent.canClaim && fluent.cooldownRemaining === 0 ? " ready" : "")}
                 onClick={() => setShowDrip(true)}
                 title={`Request testnet ${SYMBOL}`}
               >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-                  <Icon d={I.drip} width="13" height="13" />
-                  faucet
-                </span>
+                <Icon d={I.drip} width="13" height="13" />
+                <span>faucet</span>
                 <b className="num">{fmt(fluent.balance)}</b>
               </button>
               <div className="rail-foot">
-                {address && (
-                  <button className="rail-addr" onClick={() => setShowAddr(true)} title={address}>
-                    <Icon d={I.copy} width="13" height="13" />
-                    <span className="num">{address.slice(0, 6)}…{address.slice(-4)}</span>
-                  </button>
-                )}
+                <button className="rail-addr" onClick={() => setShowAddr(true)} title={address || ""}>
+                  <Icon d={I.copy} width="12" height="12" />
+                  <span className="num">{address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "not connected"}</span>
+                </button>
                 <button className="rail-out" onClick={logout} title="Disconnect" aria-label="Disconnect">
-                  <Icon d={I.logout} width="15" height="15" />
+                  <Icon d={I.logout} width="14" height="14" />
                 </button>
               </div>
             </div>
@@ -673,8 +716,9 @@ export function Terminal() {
                         <th>#</th>
                         <th>Creator</th>
                         <th>Price ({SYMBOL})</th>
+                        <th className="th-spark">Trend</th>
                         <th>{currency}</th>
-                        <th>Rank Δ</th>
+                        <th className="th-delta">Rank Δ</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -695,10 +739,12 @@ export function Terminal() {
                                 fiat={fiatOf(p)}
                                 held={Boolean(held)}
                                 socials={metaOf(r.name)}
-                                onOpen={() => openCreator(r.id)}
                               />
                             </td>
                             <td className="price num">{fmt(p)}<span className="ut">{SYMBOL}</span></td>
+                            <td className="spark-cell">
+                              <SwarmSpark points={rankHistory?.series?.[(r.name || "").trim().toLowerCase()]?.points} />
+                            </td>
                             <td className="num" style={{ color: "var(--mute)", fontSize: 11 }}>{fiatOf(p)}</td>
                             <td className="chg-cell"><DeltaTag d={r.delta} /></td>
                           </tr>
@@ -741,9 +787,10 @@ export function Terminal() {
                 metaOf={metaOf}
                 rows={rows}
                 rankHistory={rankHistory}
-                onPosition={setPosOpen}
+                onPosition={(id) => { setSelected(id); setUnits(1); setPosOpen(id); }}
                 goMarkets={() => setView("markets")}
                 currency={currency}
+                usdOf={usdOf}
               />
             )}
 
@@ -794,18 +841,28 @@ export function Terminal() {
                     <b>Contracts</b>
                     <p>Every address opens on fluentscan — verify the bytes you're trading.</p>
                   </div>
+
+                  <a className="scan-hero" href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noopener noreferrer">
+                    <span className="sh-mark"><FluentScanMark size={22} /></span>
+                    <span className="sh-txt">
+                      <i>official explorer</i>
+                      <b>fluentscan</b>
+                      <em className="num">{EXPLORER.replace(/^https?:\/\//, "")}</em>
+                    </span>
+                    <span className="sh-go">
+                      open
+                      <Icon d={I.ext} width="13" height="13" />
+                    </span>
+                  </a>
+
                   <div className="contracts">
                     <ContractRow label="market" addr={ADDRESS} note="price board · buy / sell" />
                     <ContractRow label={SYMBOL} addr={TOKEN} note="ERC-20 quote asset" />
                     <ContractRow label="faucet" addr={FAUCET} note={`${fmt(dripAmount, 0)} ${SYMBOL} / 12 h`} />
                   </div>
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <a className="scan-badge" href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noopener noreferrer">
-                      <img src="/brand/fluentscan-180.png" alt="" width="14" height="14" />
-                      fluentscan
-                      <Icon d={I.ext} width="11" height="11" />
-                    </a>
                     <a className="scan-badge" href={GAS_FAUCET_URL} target="_blank" rel="noopener noreferrer">
+                      <Icon d={I.drip} width="11" height="11" />
                       eth gas faucet
                       <Icon d={I.ext} width="11" height="11" />
                     </a>
@@ -871,7 +928,21 @@ export function Terminal() {
             fiatOf={fiatOf}
             rankHistory={rankHistory}
             onClose={() => setPosOpen(null)}
-            onTrade={() => { setPosOpen(null); openCreator(posOpen); }}
+            onTrade={() => { setPosOpen(null); }}
+            selPrice={sel && sel.id === posOpen ? selPrice : h.price}
+            qty={qty}
+            units={units}
+            setUnits={setUnits}
+            cost={sel && sel.id === posOpen ? cost : h.price * BigInt(qty)}
+            fluent={fluent}
+            trader={trader}
+            busy={busy}
+            onBuy={onBuy}
+            onSell={onSell}
+            onClaim={onClaim}
+            onRefill={onRefill}
+            dripAmount={dripAmount}
+            sheet={isNarrow}
           />
         );
       })()}
@@ -899,11 +970,10 @@ export function Terminal() {
   );
 }
 
-/* Top bar: brand left; theme toggle + live board clock right. The theme switch
-   sits exactly where farmOS puts it — top-right, pill segmented, Light/Dark/Auto
-   — so both apps feel like one product. The live pill counts seconds since the
-   last successful board read, so "is this fresh?" is answerable without a
-   tooltip. */
+/* Top bar: the navbar proper. Brand left, and on the right only what is not
+   transactional — the live-status dot and the theme switch (icon-only). Faucet,
+   wallet and disconnect moved down into the rail's utility block, so the bar
+   stays one thin clean strip. */
 function TopBar({ theme, authed, syncedAt }) {
   const [, tick] = useState(0);
   useEffect(() => {
@@ -916,15 +986,15 @@ function TopBar({ theme, authed, syncedAt }) {
     <div className="top">
       <span className="top-l"><BrandMark /></span>
       <span className="top-r">
-        {theme && (
-          <span className="theme-mini">
-            <ThemeSwitch mode={theme.mode} pick={theme.pick} compact />
-          </span>
-        )}
         {authed && (
           <span className={"top-live" + (fresh ? "" : " stale")} title={age == null ? "waiting for first read" : `board read ${age}s ago`}>
             <i className={"dot" + (fresh ? "" : " stale")} />
             {age == null ? "sync" : fresh ? `live · ${age}s` : `${age}s`}
+          </span>
+        )}
+        {theme && (
+          <span className="theme-mini">
+            <ThemeSwitch mode={theme.mode} pick={theme.pick} compact />
           </span>
         )}
       </span>
@@ -936,7 +1006,7 @@ function TopBar({ theme, authed, syncedAt }) {
 
 function TradePanel({
   sel, selPrice, heldSel, qty, units, setUnits, cost, fiatOf, money, fluent, trader,
-  busy, dripAmount, onClaim, onBuy, onSell, onRefill, metaOf, currency, onClose, sheet,
+  busy, dripAmount, onClaim, onBuy, onSell, onRefill, metaOf, currency, SYMBOL, onClose, sheet,
 }) {
   if (!sel) {
     return <div className="empty">click any row on the board to open its trade ticket</div>;
@@ -945,6 +1015,7 @@ function TradePanel({
   const maxAfford = selPrice > 0n ? Number(fluent.balance / selPrice) : 0;
   const costFiat = fiatOf(cost);
   const rankUp = sel.position > 1 ? sel.position - 1 : 1;
+  const rankDown = sel.position + 1;
 
   return (
     <>
@@ -952,7 +1023,7 @@ function TradePanel({
         <NameAvatar name={sel.name} uuid={metaOf(sel.name)?.uuid} size={44} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <div className="tk-nm">{sel.name}</div>
-          <div className="tk-rank num">rank #{sel.position} · {fmt(selPrice)} {SYMBOL}</div>
+          <div className="tk-rank num">rank #{sel.position} · {fmt(selPrice)} <u>{SYMBOL}</u></div>
           <div className="tk-fiat num">{fiatOf(selPrice)} per unit</div>
         </div>
         {sheet && (
@@ -970,7 +1041,7 @@ function TradePanel({
       </div>
 
       <div className="qty-row">
-        <span>units to buy</span>
+        <span>how many units</span>
         <div className="stepper">
           <button onClick={() => setUnits((u) => Math.max(1, (Number(u) || 1) - 1))} aria-label="minus">−</button>
           <input
@@ -987,19 +1058,49 @@ function TradePanel({
         <button className="max" onClick={() => setUnits(Math.max(1, maxAfford))} title="max affordable">max</button>
       </div>
 
-      {/* every number spelled out: what one unit costs, what the order costs */}
+      {/* every number spelled out, in plain words — a unit is a share of one
+          creator; its price is fixed by rank, so the sum is fully checkable */}
       <div className="tk-sum">
-        <div><span>price <u>per 1 unit</u></span><b className="num">{fmt(selPrice)} {SYMBOL}</b></div>
-        <div><span></span><em className="num">{fiatOf(selPrice)} / unit</em></div>
-        <div><span>units</span><b className="num">{qty} {qty === 1 ? "unit" : "units"}</b></div>
-        <div><span>you hold</span><b className="num">{heldSel.toString()} {Number(heldSel) === 1 ? "unit" : "units"}</b></div>
-        <div><span>your balance</span><b className="num">{fmt(fluent.balance)} {SYMBOL}</b></div>
-        <div className="tot"><span>order total</span><b className="num">{fmt(cost)} {SYMBOL}</b></div>
-        <div><span></span><em className="num">{costFiat}</em></div>
+        <div>
+          <span>price · 1 unit</span>
+          <b className="num">{fmt(selPrice)} {SYMBOL}</b>
+        </div>
+        <div>
+          <span>1 unit in {currency}</span>
+          <em className="num">{fiatOf(selPrice)}</em>
+        </div>
+        <div>
+          <span>units you're trading</span>
+          <b className="num">{qty} {qty === 1 ? "unit" : "units"}</b>
+        </div>
+        <div>
+          <span>you already hold</span>
+          <b className="num">{heldSel.toString()} {Number(heldSel) === 1 ? "unit" : "units"}</b>
+        </div>
+        <div>
+          <span>your balance</span>
+          <b className="num">{fmt(fluent.balance)} {SYMBOL}</b>
+        </div>
+        <div>
+          <span>most you can buy</span>
+          <b className="num">{maxAfford} {maxAfford === 1 ? "unit" : "units"}</b>
+        </div>
+        <div className="tot">
+          <span>order total</span>
+          <b className="num">{fmt(cost)} {SYMBOL}</b>
+        </div>
+        <div>
+          <span>order total in {currency}</span>
+          <em className="num">{costFiat}</em>
+        </div>
       </div>
       <p className="tk-hint">
-        1 unit = {fmt(selPrice)} {SYMBOL}, set by rank #{sel.position} (1000 ÷ rank).
-        If they reach #{rankUp} it's worth {fmt(priceOf(rankUp))}.
+        <b>1 unit = one share of {sel.name}.</b> Price is 1000 ÷ rank, so at rank
+        #{sel.position} one unit costs <u>{fmt(selPrice)} {SYMBOL}</u>.{" "}
+        {sel.position > 1
+          ? `One place up (#${rankUp}) makes it worth ${fmt(priceOf(rankUp))} ${SYMBOL}; one down (#${rankDown}), ${fmt(priceOf(rankDown))} ${SYMBOL}.`
+          : `Already at the top: holding #1 is the best case, slipping to #${rankDown} would make it worth ${fmt(priceOf(rankDown))} ${SYMBOL}.`}{" "}
+        {SYMBOL} is the market's quote token — your balance above is paid in it.
       </p>
 
       {!fluent.claimed ? (
@@ -1093,7 +1194,7 @@ function HeatStrip({ rows, holdingMap, onOpen }) {
       <div className="heat-h">
         <span className="lbl">board heat · rank 1 → {rows.length}</span>
         <span className="legend">
-          <i className="sq up" />up <i className="sq dn" />down <i className="sq fl" />flat
+          <i className="sq up" />up <i className="sq dn" />down <i className="sq fl" />—
         </span>
       </div>
       <div className="heat" role="list">
@@ -1289,54 +1390,125 @@ function FeedView({
 
 /* ----------------------------------------------------------- portfolio view */
 
-/* PnL bars: one bar per position, centred on zero, drawn from real numbers —
-   current value against the entry price when the contract exposes one. */
-function PnlChart({ holdings, money, mode, setMode }) {
+/* Portfolio chart. Three reads of the same book:
+   - bars: one bar per position, value or PnL, centred on zero
+   - line: one sparkline per position over the archived rank series, so you can
+     see the shape of the move you're holding
+   - pnl: portfolio PnL over time, rebuilt from the archive (units × archived
+     price × live FLUENT rate), so it tracks the whole book, not a snapshot
+   Everything is drawn from real numbers — the archive and the live chain read. */
+function PnlChart({ holdings, money, mode, setMode, rankHistory, usdOf }) {
   if (!holdings.length) return null;
   const maxAbs = Math.max(1, ...holdings.map((h) => Math.abs(Number(h.pnlUsd || 0))));
   const maxVal = Math.max(1, ...holdings.map((h) => Number(h.value) / 1e18));
+
+  /* Portfolio PnL series: align every held creator's archived price by index of
+     its own series, then sum units × (price − entry). Holdings without an entry
+     price fall back to their first archived price, which is honest and labelled. */
+  const pnlSeries = (() => {
+    if (!rankHistory?.series) return [];
+    const tracks = holdings.map((h) => {
+      const pts = rankHistory.series[(h.name || "").trim().toLowerCase()]?.points || [];
+      const entry = h.entry != null ? Number(h.entry) / 1e18 : (pts[0]?.price ?? null);
+      return { units: Number(h.units), entry, prices: pts.map((p) => p.price) };
+    }).filter((t) => t.prices.length > 0 && t.entry != null);
+    if (!tracks.length) return [];
+    const len = Math.max(...tracks.map((t) => t.prices.length));
+    const out = [];
+    for (let i = 0; i < len; i++) {
+      let sum = 0;
+      for (const t of tracks) {
+        const px = t.prices[Math.min(i, t.prices.length - 1)];
+        sum += t.units * (px - t.entry);
+      }
+      out.push(sum * usdOf(10n ** 18n));
+    }
+    return out;
+  })();
+
   return (
     <div className="pnl-wrap">
       <div className="pnl-h">
-        <span className="lbl">positions · {mode === "pnl" ? "profit & loss" : "book value"}</span>
+        <span className="lbl">
+          positions · {mode === "pnl" ? "profit & loss" : mode === "value" ? "book value" : mode === "line" ? "price path" : "pnl over time"}
+        </span>
         <div className="chips">
           <button className={"chip" + (mode === "pnl" ? " on" : "")} onClick={() => setMode("pnl")}>pnl</button>
           <button className={"chip" + (mode === "value" ? " on" : "")} onClick={() => setMode("value")}>value</button>
+          <button className={"chip" + (mode === "line" ? " on" : "")} onClick={() => setMode("line")}>chart</button>
+          <button className={"chip" + (mode === "track" ? " on" : "")} onClick={() => setMode("track")}>pnl chart</button>
         </div>
       </div>
-      <div className="pnl">
-        {holdings.map((h) => {
-          if (mode === "value") {
-            const hgt = Math.max(3, (Number(h.value) / 1e18 / maxVal) * 100);
+
+      {mode === "line" ? (
+        <div className="pos-sparks">
+          {holdings.map((h) => {
+            const pts = (rankHistory?.series?.[(h.name || "").trim().toLowerCase()]?.points || []).map((p) => p.price);
+            const first = pts[0], last = pts[pts.length - 1];
+            const chg = pts.length > 1 ? last - first : 0;
             return (
-              <div key={h.id} className="pnl-col" title={`${h.name}: ${fmt(h.value)} ${SYMBOL}`}>
-                <span className="pnl-tip num">{fmt(h.value, 0)}</span>
-                <span className="pnl-bar" style={{ height: `${hgt}%` }} />
+              <div key={h.id} className="pos-spark">
+                <span className="ps-nm">{h.name}</span>
+                <span className={"ps-chg num " + (chg > 0 ? "u" : chg < 0 ? "d" : "")}>
+                  {pts.length > 1 ? `${chg > 0 ? "+" : chg < 0 ? "−" : ""}${Math.abs(chg).toFixed(2)} ${SYMBOL}` : `— ${SYMBOL}`}
+                </span>
+                <RowSparkWide points={pts} />
               </div>
             );
-          }
-          const pnlNum = Number(h.pnlUsd || 0);
-          const hgt = Math.max(3, (Math.abs(pnlNum) / maxAbs) * 50);
-          return (
-            <div key={h.id} className="pnl-col" title={`${h.name}: ${pnlNum >= 0 ? "+" : "−"}${money(Math.abs(pnlNum))}`}>
-              <span className="pnl-tip num" style={{ color: pnlNum >= 0 ? "var(--up)" : "var(--down)" }}>
-                {pnlNum >= 0 ? "+" : "−"}{money(Math.abs(pnlNum))}
-              </span>
-              <span className={"pnl-bar " + (pnlNum >= 0 ? "pnl-pos" : "pnl-neg")} style={{ height: `${hgt}%` }} />
+          })}
+        </div>
+      ) : mode === "track" ? (
+        pnlSeries.length > 1 ? (
+          <>
+            <div className="track-spark">
+              <SparkFill values={pnlSeries} usd={(v) => money(v)} />
             </div>
-          );
-        })}
-      </div>
-      <div className="pnl-cap">
-        {mode === "pnl" ? "zero line = entry cost" : "bar height = current book value"} · hover a bar for the exact figure
-      </div>
+            <div className="pnl-cap">
+              portfolio pnl over the archived window · {pnlSeries.length} snapshots · hover for the value
+            </div>
+          </>
+        ) : (
+          <div className="spark-empty">
+            pnl history needs a few archived snapshots — it fills in as the board moves
+          </div>
+        )
+      ) : (
+        <>
+          <div className="pnl">
+            {holdings.map((h) => {
+              if (mode === "value") {
+                const hgt = Math.max(3, (Number(h.value) / 1e18 / maxVal) * 100);
+                return (
+                  <div key={h.id} className="pnl-col" title={`${h.name}: ${fmt(h.value)} ${SYMBOL}`}>
+                    <span className="pnl-tip num">{fmt(h.value, 0)}</span>
+                    <span className="pnl-bar" style={{ height: `${hgt}%` }} />
+                  </div>
+                );
+              }
+              const pnlNum = Number(h.pnlUsd || 0);
+              const hgt = Math.max(3, (Math.abs(pnlNum) / maxAbs) * 50);
+              return (
+                <div key={h.id} className="pnl-col" title={`${h.name}: ${pnlNum >= 0 ? "+" : "−"}${money(Math.abs(pnlNum))}`}>
+                  <span className="pnl-tip num" style={{ color: pnlNum >= 0 ? "var(--up)" : "var(--down)" }}>
+                    {pnlNum >= 0 ? "+" : "−"}{money(Math.abs(pnlNum))}
+                  </span>
+                  <span className={"pnl-bar " + (pnlNum >= 0 ? "pnl-pos" : "pnl-neg")} style={{ height: `${hgt}%` }} />
+                </div>
+              );
+            })}
+          </div>
+          <div className="pnl-cap">
+            {mode === "pnl" ? "zero line = entry cost" : "bar height = current book value"} · hover a bar for the exact figure
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 function PortfolioView({
   holdings, entryKnown, netWorth, bookValue, balance, ethBalance, ethSymbol,
-  fiatOf, fiatEth, money, metaOf, rankHistory, onPosition, goMarkets, currency,
+  fiatOf, fiatEth, money, metaOf, rankHistory, onPosition, goMarkets, currency, usdOf,
 }) {
   const [mode, setMode] = useState("pnl");
   const totalPnl = holdings.reduce((a, h) => a + Number(h.pnlUsd || 0), 0);
@@ -1367,7 +1539,8 @@ function PortfolioView({
 
       {holdings.length > 0 ? (
         <>
-          <PnlChart holdings={holdings} money={money} mode={mode} setMode={setMode} />
+          <PnlChart holdings={holdings} money={money} mode={mode} setMode={setMode}
+                    rankHistory={rankHistory} usdOf={usdOf} />
 
           <div className="dash-col">
             <div className="dash-h">
@@ -1437,44 +1610,126 @@ function PortfolioView({
 }
 
 /* Position popup: opening a holding shows the trade in place, never navigates. */
-function PositionModal({ h, metaOf, fiatOf, rankHistory, onClose, onTrade }) {
+/* Position popup: opening a holding shows the trade in place and lets you act on
+   it, never navigating away. Buy/sell live right here in the sheet, so a tap in
+   portfolio stays in portfolio — the markets tab is for discovery, not the only
+   place you can trade. */
+function PositionModal({
+  h, row, metaOf, fiatOf, rankHistory, onClose, onTrade,
+  selPrice, qty, units, setUnits, cost, fluent, trader, busy,
+  onBuy, onSell, onClaim, onRefill, dripAmount, sheet,
+}) {
   const num = Number(h.pnlUsd || 0);
   const pct = Number(h.pnlPct || 0);
   const series = rankHistory?.series?.[(h.name || "").trim().toLowerCase()]?.points || [];
+  const price = selPrice ?? h.price;
+  const heldUnits = h.units;
+  const maxAfford = price > 0n ? Number(fluent?.balance / price) : 0;
+  const canBuy = Boolean(fluent?.claimed) && fluent?.balance >= cost && !busy;
+  const canSell = heldUnits > 0n && !busy;
+  const links = socialLinks(h.name, metaOf(h.name));
+
   return (
     <div className="modal-scrim" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+      <div className={"modal wide pos-modal" + (sheet ? " sheet" : "")} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="modal-h">
-          <span>your position</span>
+          <span>your position · trade</span>
           <button className="modal-x" onClick={onClose} aria-label="close">×</button>
         </div>
+
         <div className="pos-top">
           <NameAvatar name={h.name} uuid={metaOf(h.name)?.uuid} size={46} />
           <div className="who-txt">
-            <span className="rank num">rank #{h.position}</span>
+            <span className="rank num">rank #{h.position} · {fmt(price)} {SYMBOL}</span>
             <h4>{h.name}</h4>
-            <span className="px num">{fmt(h.price)} {SYMBOL} / unit</span>
+            <span className="px num">{fiatOf(h.value)} book value</span>
+          </div>
+          <div className="tk-links">
+            {links.filter((l) => l.found).map((l) => (
+              <a key={l.k} className={l.k} href={l.url} target="_blank"
+                 rel="noopener noreferrer nofollow" title={l.label} aria-label={l.label}>
+                <SocGlyph k={l.k} />
+              </a>
+            ))}
           </div>
         </div>
 
+        {series.length > 1 && (
+          <div className="pos-swarm">
+            <SwarmSpark points={series} w={300} hgt={44} />
+            <div className="pnl-cap">price path · {series.length} archived snapshots</div>
+          </div>
+        )}
+
         <div className="pos-grid">
-          <div className="pos-cell"><i>units held</i><b>{h.units.toString()}</b><em>units</em></div>
-          <div className="pos-cell"><i>position value</i><b>{fmt(h.value)}</b><em>{SYMBOL} · {fiatOf(h.value)}</em></div>
+          <div className="pos-cell"><i>units held</i><b>{heldUnits.toString()}</b><em>units</em></div>
+          <div className="pos-cell"><i>position value</i><b>{fmt(h.value)}</b><em>{SYMBOL}</em></div>
           <div className="pos-cell">
             <i>avg entry</i>
             <b>{h.entry != null ? fmt(h.entry) : "—"}</b>
-            <em>{h.entry != null ? `${SYMBOL} / unit` : "not exposed onchain"}</em>
+            <em>{h.entry != null ? `${SYMBOL} / unit` : "not onchain"}</em>
           </div>
           <div className="pos-cell">
             <i>pnl vs cost</i>
             <b className={num >= 0 ? "u" : "d"}>
-              {h.cost != null ? (num >= 0 ? "+" : "−") + fmt(h.pnlAbs || 0n) : "—"}
+              {h.cost != null ? (num >= 0 ? "+" : "−") + money(Math.abs(num)) : "—"}
             </b>
-            <em>{h.cost != null ? `${num >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(1)}%` : "needs entry price"}</em>
+            <em>{h.cost != null ? `${num >= 0 ? "+" : "−"}${Math.abs(pct).toFixed(1)}%` : "needs entry"}</em>
           </div>
         </div>
 
-        {series.length > 1 && <MiniSpark points={series.map((p) => p.price)} />}
+        {/* inline trade — the sheet is the ticket, no redirect */}
+        <div className="qty-row">
+          <span>units to trade</span>
+          <div className="stepper">
+            <button onClick={() => setUnits((u) => Math.max(1, (Number(u) || 1) - 1))} aria-label="minus">−</button>
+            <input
+              type="number" min="1" step="1" value={units} inputMode="numeric"
+              onChange={(e) => setUnits(e.target.value === "" ? "" : Math.max(1, Math.floor(Number(e.target.value))))}
+            />
+            <button onClick={() => setUnits((u) => (Number(u) || 1) + 1)} aria-label="plus">+</button>
+          </div>
+        </div>
+        <div className="qty-presets">
+          {[1, 5, 10, 25].map((n) => (
+            <button key={n} className={qty === n ? "on" : ""} onClick={() => setUnits(n)}>{n}</button>
+          ))}
+          <button className="max" onClick={() => setUnits(Math.max(1, maxAfford))} title="max affordable">max</button>
+        </div>
+
+        <div className="tk-sum">
+          <div><span>price <u>per 1 unit</u></span><b className="num">{fmt(price)} {SYMBOL}</b></div>
+          <div><span>units</span><b className="num">{qty} {qty === 1 ? "unit" : "units"}</b></div>
+          <div><span>your balance</span><b className="num">{fmt(fluent?.balance ?? 0n)} {SYMBOL}</b></div>
+          <div className="tot"><span>order total</span><b className="num">{fmt(cost)} {SYMBOL}</b></div>
+          <div><span></span><em className="num">{fiatOf(cost)}</em></div>
+        </div>
+
+        {!fluent?.claimed ? (
+          <button className="btn primary" disabled={busy || !fluent?.canClaim} onClick={onClaim}>
+            {fluent?.busy ? "confirming…" : `claim ${fmt(dripAmount, 0)} ${SYMBOL}`}
+          </button>
+        ) : (
+          <div className="tk-acts">
+            <button className="btn buy-b" disabled={!canBuy} onClick={onBuy}>
+              {trader?.busy ? "confirming…" : `buy ${qty}`}
+            </button>
+            <button className="btn sell-b" disabled={!canSell} onClick={() => onSell(false)}>
+              {heldUnits === 0n ? "sell" : `sell ${Math.min(qty, Number(heldUnits))}`}
+            </button>
+          </div>
+        )}
+        {heldUnits > 0n && (
+          <button className="linkbtn" onClick={() => onSell(true)}>
+            close full position ({heldUnits.toString()} units)
+          </button>
+        )}
+        {fluent?.claimed && fluent?.balance < cost && (
+          <div className="warn">
+            not enough {SYMBOL} — <button className="linkbtn" onClick={onRefill}>request a drip</button>
+          </div>
+        )}
+        {trader?.txError && <div className="warn err">{trader.txError}</div>}
 
         <p className="pos-note">
           Rank #{h.position} fixes the unit price at 1000 ÷ rank. One step up is worth{" "}
@@ -1483,30 +1738,96 @@ function PositionModal({ h, metaOf, fiatOf, rankHistory, onClose, onTrade }) {
 
         <div className="pos-acts">
           <button className="btn ghost" onClick={onClose}>close</button>
-          <button className="btn primary" onClick={onTrade}>trade this creator</button>
+          <button className="btn ghost" onClick={onClose}>back to portfolio</button>
         </div>
       </div>
     </div>
   );
 }
 
-function MiniSpark({ points }) {
-  const w = 100, hgt = 30;
+/* Swarm sparkline: the creator's own price path, compact form, drawn from the
+   archived rank series. Every card carries its own swarm shape so the board
+   reads as a wall of movement instead of a list of numbers. */
+function SwarmSpark({ points, w = 96, hgt = 24 }) {
+  const vals = (points || []).map((p) => p.price).filter((n) => Number.isFinite(n));
+  if (vals.length < 2) {
+    return (
+      <svg className="rspark swarm" viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0" y1={hgt / 2} x2={w} y2={hgt / 2} className="ln f" />
+      </svg>
+    );
+  }
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  const pt = vals.map((v, i) => [(i / (vals.length - 1)) * w, hgt - ((v - min) / span) * (hgt - 3) - 1.5]);
+  const d = pt.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const trend = vals[vals.length - 1] - vals[0];
+  const dir = trend > 0 ? "u" : trend < 0 ? "d" : "f";
+  const [ex, ey] = pt[pt.length - 1];
+  const area = `${d} L${w},${hgt} L0,${hgt} Z`;
+  return (
+    <svg className={"rspark swarm " + dir} viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none"
+         aria-label={`price path ${trend > 0 ? "up" : trend < 0 ? "down" : "flat"}, ${vals.length} snapshots`}>
+      <path className={"swarm-area " + dir} d={area} />
+      <path className={"ln " + dir} d={d} />
+      <circle cx={ex} cy={ey} r="1.8" className={"dot-e " + dir} />
+    </svg>
+  );
+}
+
+/* Wider variant of the row sparkline, used in the portfolio chart tab: same
+   honest geometry, larger box and an end dot so the latest point is obvious. */
+function RowSparkWide({ points }) {
+  const w = 220, hgt = 34;
+  if (!points || points.length < 2) {
+    return (
+      <svg className="rspark wide" viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0" y1={hgt / 2} x2={w} y2={hgt / 2} className="ln f" />
+      </svg>
+    );
+  }
   const min = Math.min(...points), max = Math.max(...points);
   const span = max - min || 1;
-  const d = points.map((p, i) => {
-    const x = (i / Math.max(1, points.length - 1)) * w;
-    const y = hgt - ((p - min) / span) * hgt;
-    return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ");
+  const pt = points.map((v, i) => [(i / (points.length - 1)) * w, hgt - ((v - min) / span) * (hgt - 4) - 2]);
+  const d = pt.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
   const trend = points[points.length - 1] - points[0];
+  const [ex, ey] = pt[pt.length - 1];
   return (
-    <div style={{ padding: "8px 16px 0" }}>
-      <svg className="spark" viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none">
-        <path className={"ln " + (trend >= 0 ? "u" : "d")} d={d} />
+    <svg className="rspark wide" viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none" aria-hidden="true">
+      <path className={"ln " + (trend > 0 ? "u" : trend < 0 ? "d" : "f")} d={d} />
+      <circle cx={ex} cy={ey} r="2.4" className={"dot-e " + (trend > 0 ? "u" : trend < 0 ? "d" : "f")} />
+    </svg>
+  );
+}
+
+/* Filled area chart for the portfolio PnL timeline. Signs are honest: the fill
+   sits above or below the zero line depending on where the series ends. */
+function SparkFill({ values, usd }) {
+  const w = 320, hgt = 96;
+  const min = Math.min(...values, 0), max = Math.max(...values, 0);
+  const span = max - min || 1;
+  const y0 = hgt - ((0 - min) / span) * hgt;
+  const pt = values.map((v, i) => [(i / Math.max(1, values.length - 1)) * w, hgt - ((v - min) / span) * hgt]);
+  const line = pt.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const area = `${line} L${w},${y0.toFixed(2)} L0,${y0.toFixed(2)} Z`;
+  const last = values[values.length - 1];
+  const trend = last - values[0];
+  return (
+    <>
+      <svg className="spark fill" viewBox={`0 0 ${w} ${hgt}`} preserveAspectRatio="none" role="img"
+           aria-label={`portfolio pnl ${trend >= 0 ? "up" : "down"} ${usd(Math.abs(trend))}`}>
+        <line x1="0" y1={y0} x2={w} y2={y0} className="zero" />
+        <path className={"area " + (trend >= 0 ? "u" : "d")} d={area} />
+        <path className={"ln " + (trend >= 0 ? "u" : "d")} d={line} />
       </svg>
-      <div className="pnl-cap">archived rank price · {points.length} snapshots</div>
-    </div>
+      <div className="spark-legend num">
+        <span>start {usd(values[0])}</span>
+        <span className={trend >= 0 ? "u" : "d"}>
+          {trend >= 0 ? "+" : "−"}{usd(Math.abs(trend))} since first snapshot
+        </span>
+        <span>now {usd(last)}</span>
+      </div>
+    </>
   );
 }
 

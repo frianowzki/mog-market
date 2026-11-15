@@ -79,6 +79,34 @@ a{color:inherit}
   animation:ping 2.4s infinite}
 .dot.stale{background:var(--mute);animation:none}
 .top-live.stale{color:var(--mute)}
+/* top-bar cluster: faucet, wallet, theme, disconnect — all the same height so
+   the row reads as one control strip instead of a pile of buttons. */
+.top-faucet,.top-addr,.top-out{display:inline-flex;align-items:center;gap:6px;
+  height:26px;padding:0 9px;border:1px solid var(--line2);border-radius:5px;
+  background:var(--paper);color:var(--mute);font-family:var(--mono);
+  font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  transition:border-color .14s,color .14s,background .14s}
+.top-faucet:hover,.top-addr:hover,.top-out:hover{border-color:var(--line2);
+  color:var(--ink);background:var(--hover)}
+.top-faucet b{font-size:10.5px;letter-spacing:0;color:var(--ink);font-weight:500}
+.top-faucet.ready{border-color:var(--buy);color:var(--buy)}
+.top-faucet.ready b{color:var(--buy)}
+.top-addr span{font-size:9.5px;letter-spacing:.04em;text-transform:none}
+.top-out{padding:0;width:26px;justify-content:center}
+.top-out:hover{background:var(--down);border-color:var(--down);color:#fff}
+@media(max-width:760px){
+  .top-faucet .lbl,.top-addr span{display:none}
+  .top-faucet{padding:0 8px}
+}
+@media(max-width:520px){
+  .top{padding:9px 12px;gap:8px}
+  .top-l,.top-r{gap:6px}
+  .top-live{font-size:8px;letter-spacing:.06em}
+  .top-faucet,.top-out{height:24px}
+  .top-faucet{padding:0 6px;gap:4px}
+  .top-out{width:24px}
+  .theme-mini .theme-sw{transform:scale(.92)}
+}
 @keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--up) 55%,transparent)}
   70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 
@@ -215,6 +243,12 @@ td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;
   vertical-align:middle}
 td.rank{text-align:left;font-size:11px;color:var(--mute)}
 td.price{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+thead th.th-spark{text-align:center;width:88px}
+td.spark-cell{text-align:center}
+/* the trend column is the first thing to go when the table gets tight */
+@media(max-width:1080px){
+  thead th.th-spark,td.spark-cell{display:none}
+}
 tr.asset:hover{background:var(--hover);cursor:pointer}
 tr.asset.held{background:var(--held)}
 tr.asset.held:hover{background:var(--held2)}
@@ -266,15 +300,12 @@ tr.asset.held:hover{background:var(--held2)}
 .hcard-links a:hover{transform:translateY(-1px)}
 .hcard-links a svg{width:13px;height:13px;fill:currentColor}
 .hcard-links a.x:hover{background:#14120f;color:#fff}
-.hcard-links a.yt:hover{background:#ff0033;color:#fff}
-.hcard-links a.ig:hover{background:linear-gradient(135deg,#f9ce34,#ee2a7b 55%,#6228d7);color:#fff}
-.hcard-links a.tt:hover{background:#14120f;color:#fff}
-.hcard-links a.tw:hover{background:#9146ff;color:#fff}
+.hcard-links a.youtube:hover{background:#ff0033;color:#fff}
+.hcard-links a.instagram:hover{background:linear-gradient(135deg,#f9ce34,#ee2a7b 55%,#6228d7);color:#fff}
+.hcard-links a.tiktok:hover{background:#14120f;color:#fff}
+.hcard-links a.twitch:hover{background:#9146ff;color:#fff}
+.hcard-links a.kick:hover{background:#53fc18;color:#0b0b0b}
 .hcard-links a.notfound{opacity:.45}
-.hcard-cta{width:100%;margin-top:10px;padding:7px;border-radius:4px;
-  background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:9px;
-  letter-spacing:.12em;text-transform:uppercase}
-.hcard-cta:hover{background:var(--red)}
 
 /* ---------------------------------------------------------------- dealer */
 .dealer{position:sticky;top:47px;align-self:start;min-height:calc(100vh - 47px);
@@ -286,12 +317,23 @@ tr.asset.held:hover{background:var(--held2)}
 .tk-top{display:flex;gap:11px;align-items:center}
 .tk-nm{font-family:var(--serif);font-size:19px;line-height:1.1}
 .tk-rank{font-size:10.5px;color:var(--ink2);margin-top:2px}
+/* the ticker inside a price line: always a real, readable FLUENT token mark,
+   never a 1-character glyph */
+.tk-rank u,.tk-hint u{text-decoration:none;display:inline-block;margin-left:1px;
+  padding:1px 4px;border-radius:3px;background:var(--paper3);color:var(--ink);
+  font-size:9.5px;letter-spacing:.09em;vertical-align:1px}
 .tk-fiat{font-size:10px;color:var(--mute)}
 .tk-links{display:flex;gap:6px}
 .tk-links a{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--line2);
   border-radius:50%;color:var(--ink2)}
 .tk-links a svg{width:12px;height:12px;fill:currentColor}
 .tk-links a:hover{border-color:var(--ink);color:var(--ink)}
+.tk-links a.x:hover{background:#14120f;border-color:#14120f;color:#fff}
+.tk-links a.youtube:hover{background:#ff0033;border-color:#ff0033;color:#fff}
+.tk-links a.instagram:hover{background:linear-gradient(135deg,#f9ce34,#ee2a7b 55%,#6228d7);border-color:transparent;color:#fff}
+.tk-links a.tiktok:hover{background:#14120f;border-color:#14120f;color:#fff}
+.tk-links a.twitch:hover{background:#9146ff;border-color:#9146ff;color:#fff}
+.tk-links a.notfound{opacity:.4}
 
 .qty-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding-top:10px;border-top:1px solid var(--line2)}
@@ -491,7 +533,6 @@ tr.asset.held:hover{background:var(--held2)}
 .crow:hover{border-color:var(--ink);background:var(--paper4);transform:translateY(-1px)}
 .crow .mark{width:30px;height:30px;flex:none;border-radius:7px;overflow:hidden;
   background:var(--paper2);display:grid;place-items:center}
-.crow .mark img{width:100%;height:100%;display:block}
 .crow .ctxt{min-width:0;flex:1}
 .crow .ctxt i{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--mute);font-style:normal}
@@ -500,12 +541,49 @@ tr.asset.held:hover{background:var(--held2)}
 .crow .ctxt span{display:block;font-size:10px;color:var(--mute);margin-top:1px}
 .crow svg{color:var(--mute);flex:none}
 .crow:hover svg{color:var(--ink)}
+/* contract card actions: copy stays quiet until hover, explorer arrow is always
+   visible so the row reads as a link */
+.crow .cacts{display:flex;align-items:center;gap:2px;flex:none}
+.crow .ccopy{width:24px;height:24px;display:grid;place-items:center;border-radius:5px;
+  color:var(--mute);opacity:0;transition:opacity .14s,background .14s,color .14s}
+.crow:hover .ccopy{opacity:1}
+.crow .ccopy:hover{background:var(--hover2);color:var(--ink)}
+.crow .cext{width:20px;display:grid;place-items:center;color:var(--mute)}
+@media(hover:none){.crow .ccopy{opacity:1}}
 .scan-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:99px;
   border:1px solid var(--line2);background:var(--paper);text-decoration:none;
   font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink2)}
 .scan-badge:hover{border-color:var(--ink);color:var(--ink)}
 .scan-badge img{width:14px;height:14px;border-radius:3px;display:block}
+
+/* fluentscan hero card at the top of the contracts block: the mark, the chain
+   name and the host, all one click away from the explorer. */
+.scan-hero{display:flex;align-items:center;gap:13px;padding:14px 15px;margin-bottom:10px;
+  border:1px solid var(--line2);border-radius:9px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--red) 10%,transparent),transparent 62%),
+    var(--paper);
+  text-decoration:none;transition:border-color .16s,transform .16s,box-shadow .16s}
+.scan-hero:hover{border-color:var(--ink);transform:translateY(-1px);box-shadow:var(--shadow)}
+.scan-hero .sh-mark{width:42px;height:42px;flex:none;border-radius:11px;display:grid;
+  place-items:center;background:var(--ink);color:var(--paper);
+  box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 14%,transparent)}
+.scan-hero .sh-txt{min-width:0;flex:1;display:grid;gap:1px}
+.scan-hero .sh-txt i{font-family:var(--mono);font-size:8.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--mute);font-style:normal}
+.scan-hero .sh-txt b{font-family:var(--serif);font-size:19px;font-weight:400;
+  line-height:1.1;letter-spacing:-.01em}
+.scan-hero .sh-txt em{font-style:normal;font-size:10px;color:var(--mute);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scan-hero .sh-go{display:inline-flex;align-items:center;gap:5px;flex:none;
+  padding:5px 9px;border-radius:99px;border:1px solid var(--line2);
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink2);transition:background .14s,color .14s,border-color .14s}
+.scan-hero:hover .sh-go{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+/* contract rows inherit the same mark colour so the block reads as one family */
+.crow .mark{color:var(--ink2)}
+.crow:hover .mark{color:var(--red)}
 
 /* ---------------------------------------------------------------- footer */
 .foot{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
@@ -633,6 +711,57 @@ tr.asset.held:hover{background:var(--held2)}
 .spark .area{opacity:.10}
 .spark-empty{font-family:var(--mono);font-size:8.5px;color:var(--mute);text-align:center;
   padding:12px 0}
+/* row sparkline in the markets table */
+.rspark{width:74px;height:20px;display:block;overflow:visible}
+.rspark .ln{fill:none;stroke:var(--mute);stroke-width:1.4;stroke-linejoin:round;
+  stroke-linecap:round}
+.rspark .ln.u{stroke:var(--up)}
+.rspark .ln.d{stroke:var(--down)}
+.rspark .ln.f{stroke:var(--line2)}
+.spark-cell{width:84px;padding-right:4px}
+
+/* swarm sparkline: one price path per creator, compact, with a soft area fill
+   so a board full of them reads as a wall of movement. */
+.rspark.swarm{width:96px;height:24px;display:block;overflow:visible}
+.rspark.swarm .ln{stroke-width:1.5}
+.swarm-area{stroke:none;opacity:.14}
+.swarm-area.u{fill:var(--up)}
+.swarm-area.d{fill:var(--down)}
+.swarm-area.f{fill:var(--line2)}
+.rspark .dot-e{stroke:none}
+.rspark .dot-e.u{fill:var(--up)}
+.rspark .dot-e.d{fill:var(--down)}
+.rspark .dot-e.f{fill:var(--line2)}
+@media(hover:hover){
+  tr.asset:hover .rspark.swarm .ln{stroke-width:1.9}
+  tr.asset:hover .swarm-area{opacity:.2}
+}
+.pos-swarm{padding:6px 16px 2px}
+.pos-swarm .rspark.swarm{width:100%;height:44px}
+
+/* wider sparkline + portfolio chart tabs */
+.rspark.wide{width:100%;height:34px;display:block;overflow:visible}
+.pos-sparks{display:grid;gap:1px;max-height:280px;overflow:auto;
+  border-top:1px solid var(--line)}
+.pos-spark{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;
+  padding:8px 2px 6px;border-bottom:1px solid var(--line);position:relative}
+.pos-spark:last-child{border-bottom:0}
+.pos-spark .ps-nm{font-size:11.5px;font-weight:500;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pos-spark .ps-chg{font-family:var(--mono);font-size:10px;color:var(--mute)}
+.pos-spark .ps-chg.u{color:var(--up)}.pos-spark .ps-chg.d{color:var(--down)}
+.pos-spark .rspark.wide{grid-column:1/-1}
+.track-spark{padding-top:4px}
+.spark.fill{width:100%;height:110px;display:block;overflow:visible}
+.spark.fill .zero{stroke:var(--line2);stroke-width:1;stroke-dasharray:3 3}
+.spark.fill .area{opacity:.13}
+.spark.fill .area.u{fill:var(--up)}
+.spark.fill .area.d{fill:var(--down)}
+.spark-legend{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:var(--mono);font-size:9px;color:var(--mute);padding:2px 0 6px;
+  flex-wrap:wrap}
+.spark-legend .u{color:var(--up)}
+.spark-legend .d{color:var(--down)}
 
 /* mobile trade ticket: a bottom sheet, used at every width the rail collapses */
 .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:110;
@@ -687,7 +816,7 @@ tr.asset.held:hover{background:var(--held2)}
   /* markets on mobile: card rows, not a squeezed 6-column table */
   table,thead,tbody,tr,td{display:block}
   thead{display:none}
-  tr.asset{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;
+  tr.asset{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;
     align-items:center;padding:9px 12px;border-bottom:1px solid var(--line)}
   tr.asset.held{background:var(--held)}
   td{border:0;padding:0;text-align:left}
@@ -695,8 +824,13 @@ tr.asset.held:hover{background:var(--held2)}
   tr.asset td:nth-child(2){grid-row:1;grid-column:2;min-width:0}
   tr.asset td.price{grid-row:2;grid-column:2;font-size:11px;color:var(--mute);
     padding-top:1px}
-  tr.asset td.num:nth-child(4){display:none}
-  tr.asset td.chg{grid-row:1;grid-column:3;text-align:right;align-self:start;
+  tr.asset td.spark-cell{display:block;grid-row:2;grid-column:3;width:auto;justify-self:end;
+    align-self:center;padding:0;opacity:.75}
+  .rspark{width:52px;height:16px}
+  .rspark.swarm{width:56px;height:18px}
+  .spark-cell{width:60px}
+  tr.asset td.num:nth-child(5){display:none}
+  tr.asset td.chg-cell{grid-row:1;grid-column:3;text-align:right;align-self:start;
     padding-top:2px}
   tr.asset td.act{display:none}
   .who .nm{max-width:none;font-size:12.5px}
