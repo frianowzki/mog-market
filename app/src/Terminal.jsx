@@ -36,6 +36,8 @@ const I = {
   auto: "M4 5h13a3 3 0 013 3v8a3 3 0 01-3 3H4zM8 9v6M4 12H2",
   eye: "M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6zM12 15a3 3 0 100-6 3 3 0 000 6z",
   close: "M6 6l12 12M18 6L6 18",
+  arrowUR: "M7 17L17 7M9 7h8v8",
+  chevD: "M6 9l6 6 6-6",
 };
 
 function XIcon() {
@@ -1237,6 +1239,150 @@ function RankBand({ from, to, rows, holdingMap, fiatOf, metaOf, onOpen, label })
   );
 }
 
+/* ---------- creator bio (feed cards) ----------
+   Bios come from /api/bio, which reads Wikipedia. One request per board render
+   for the visible names; if a creator has no page the card falls back to a line
+   derived from the live board, never a made-up biography. */
+function useBios(names) {
+  const [bios, setBios] = useState({});
+  const key = names.filter(Boolean).join("|");
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    (async () => {
+      try {
+        const r = await fetch(`/api/bio?names=${encodeURIComponent(key)}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (alive && d.bios) setBios((prev) => ({ ...prev, ...d.bios }));
+      } catch { /* fallbacks carry the card */ }
+    })();
+    return () => { alive = false; };
+  }, [key]);
+  return bios;
+}
+
+/* Ribbon card: image-first tile with the rank label top-left, headline and BUY
+   bottom-left, circular arrow top-right. Same geometry as the reference, but
+   the image is the creator's real leaderboard photo. */
+function RibbonCard({ r, kind, index, fiatOf, metaOf, onOpen, priceOf }) {
+  const p = priceOf(r.position);
+  const d = deltaOf(r);
+  const meta = metaOf(r.name);
+  const dir = kind === "up" ? "up" : "dn";
+  return (
+    <button
+      className={"rb" + (index === 0 ? " lead" : "")}
+      onClick={() => onOpen(r.id)}
+      aria-label={`${r.name}, rank ${r.position}, ${fmt(p)} ${SYMBOL}`}
+    >
+      <span className="rb-img">
+        <NameAvatar name={r.name} uuid={meta?.uuid} size={420} />
+      </span>
+      <span className="rb-shade" />
+      <span className="rb-label">
+        {String(index + 1).padStart(2, "0")} / {kind === "up" ? "up +" + d : "down " + (d || 0)}
+      </span>
+      <span className="rb-go"><Icon d={I.arrowUR} width="12" height="12" /></span>
+      <span className="rb-body">
+        <span className="rb-rank num">rank #{r.position} · {fmt(p)} {SYMBOL}</span>
+        <span className="rb-nm">{r.name}</span>
+        <span className="rb-sub">
+          {kind === "up"
+            ? (d > 0 ? `climbed ${d} place${d === 1 ? "" : "s"} this snapshot` : `holding #${r.position}`)
+            : (d < 0 ? `dropped ${Math.abs(d)} place${Math.abs(d) === 1 ? "" : "s"} this snapshot` : `sitting at #${r.position}`)}
+          {" · "}{fiatOf(p)}
+        </span>
+        <span className={"rb-btn " + dir}>BUY <Icon d={I.arrowUR} width="10" height="10" /></span>
+      </span>
+    </button>
+  );
+}
+
+/* Showcase card: 4:3 tile, creator photo, name + rank over a bottom gradient,
+   chevron top-right that flips open the bio panel inline. */
+function ShowcaseCard({ r, fiatOf, metaOf, onOpen, priceOf, bio, wide }) {
+  const [open, setOpen] = useState(false);
+  const p = priceOf(r.position);
+  const meta = metaOf(r.name);
+  return (
+    <div className={"sc" + (open ? " open" : "") + (wide ? " wide" : "")}>
+      <button className="sc-face" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+              aria-label={`${r.name}, rank ${r.position}, ${open ? "hide" : "show"} bio`}>
+        <span className="sc-img">
+          <NameAvatar name={r.name} uuid={meta?.uuid} size={420} />
+        </span>
+        <span className="sc-shade" />
+        <span className="sc-chev"><Icon d={I.chevD} width="12" height="12" /></span>
+        <span className="sc-txt">
+          <b>{r.name}</b>
+          <span className="num">rank #{r.position} · {fmt(p)} {SYMBOL}</span>
+        </span>
+      </button>
+      <div className="sc-bio">
+        <p>
+          {bio?.bio
+            || `#${r.position} on the Motion board at ${fmt(p)} ${SYMBOL} a unit — rank sets the price, so every place is worth money.`}
+        </p>
+        <div className="sc-acts">
+          <span className="sc-src">{bio ? "wikipedia" : "motion board"}</span>
+          {bio?.url && (
+            <a href={bio.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>read more ↗</a>
+          )}
+          <button className="sc-buy" onClick={() => onOpen(r.id)}>buy <Icon d={I.arrowUR} width="10" height="10" /></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Card interaction: equal thumbnails that widen on click to reveal the bio.
+   Click a card, the row re-flows and that card's story slides out. */
+function InteractionCards({ rows, fiatOf, metaOf, onOpen, priceOf, bios }) {
+  const [open, setOpen] = useState(null);
+  const list = rows.slice(0, 6);
+  return (
+    <div className="ic-row">
+      {list.map((r, i) => {
+        const on = open === r.id;
+        const meta = metaOf(r.name);
+        const bio = bios[r.name];
+        return (
+          <div
+            key={r.id}
+            className={"ic" + (on ? " on" : "")}
+            onMouseEnter={() => setOpen(r.id)}
+            onClick={() => setOpen(on ? null : r.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter") setOpen(on ? null : r.id); }}
+            aria-expanded={on}
+          >
+            <span className="ic-face">
+              <span className="ic-img"><NameAvatar name={r.name} uuid={meta?.uuid} size={380} /></span>
+              <span className="ic-shade" />
+              <span className="ic-num">({i + 1})</span>
+              <span className="ic-name">{r.name}</span>
+            </span>
+            <span className="ic-body">
+              <span className="ic-rank num">rank #{r.position} · {fmt(priceOf(r.position))} {SYMBOL}</span>
+              <h4>{r.name}</h4>
+              <p>
+                {bio?.bio
+                  || `#${r.position} on the board at ${fmt(priceOf(r.position))} ${SYMBOL} a unit. Price is 1000 ÷ rank, so every place up is money.`}
+              </p>
+              <span className="ic-src">{bio ? "source · wikipedia" : "source · motion board"}</span>
+              <button className="rb-btn" onClick={(e) => { e.stopPropagation(); onOpen(r.id); }}>
+                BUY <Icon d={I.arrowUR} width="10" height="10" />
+              </button>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FeedView({
   rows, holdingMap, fiatOf, metaOf, feedTab, setFeedTab, onOpen,
   capturedAt, liveFresh, syncedAt, total,
@@ -1258,6 +1404,23 @@ function FeedView({
     .slice(0, 12);
   const maxAbs = Math.max(1, ...chart.map((r) => Math.abs(deltaOf(r))));
 
+  /* Ribbon + showcase feeds read the board in rank order, and the interaction
+     row reads the top of it — the names people actually recognise. */
+  const priceOf = (rank) => 1000 / Math.max(1, Number(rank) || 1);
+  const gainers = [...rows].filter((r) => deltaOf(r) > 0)
+    .sort((a, b) => deltaOf(b) - deltaOf(a)).slice(0, 5);
+  const losers = [...rows].filter((r) => deltaOf(r) < 0)
+    .sort((a, b) => deltaOf(a) - deltaOf(b)).slice(0, 5);
+  /* A perfectly still board still gets live cards — the top of the board stands
+     in for the strip rather than showing an empty section. */
+  const gainShow = gainers.length ? gainers : rows.slice(0, 5);
+  const loseShow = losers.length ? losers : [...rows.slice(-5)].reverse();
+  const showcaseRows = rows.slice(0, 8);
+  const bioNames = [...new Set([...gainShow, ...loseShow, ...rows.slice(0, 6)].map((r) => r.name))];
+  const bios = useBios(bioNames);
+  const gainSum = gainers.reduce((a, r) => a + deltaOf(r), 0);
+  const loseSum = losers.reduce((a, r) => a + Math.abs(deltaOf(r)), 0);
+
   return (
     <section className="pane">
       <div className="feed-hero">
@@ -1277,12 +1440,11 @@ function FeedView({
         </div>
       </div>
 
-      <div className="pane-grid">
-        <div className="pcard"><i>creators</i><b className="num">{total}</b><em>on the board</em></div>
-        <div className="pcard"><i>climbing</i><b className="num" style={{ color: "var(--up)" }}>{up}</b><em>{heat.toFixed(0)}% of board</em></div>
-        <div className="pcard"><i>slipping</i><b className="num" style={{ color: "var(--down)" }}>{down}</b><em>losing rank</em></div>
-        <div className="pcard"><i>holding</i><b className="num">{still}</b><em>unchanged rank</em></div>
-        <div className="pcard"><i>net drift</i><b className={"num " + (drift > 0 ? "u" : drift < 0 ? "d" : "")}>{drift > 0 ? "+" + drift : drift < 0 ? drift : "0"}</b><em>ranks gained − lost</em></div>
+      <div className="lp-stats feed-stats">
+        <div className="lp-stat"><b className="num">{total}</b><span>creators on the board</span></div>
+        <div className="lp-stat"><b className="num u">{up}</b><span>climbing · {heat.toFixed(0)}%</span></div>
+        <div className="lp-stat"><b className="num d">{down}</b><span>slipping rank</span></div>
+        <div className="lp-stat"><b className="num">{fmt(BigInt(Math.round(priceOf(1) * 1e6)) * 10n ** 12n, 0)}</b><span>top unit price · {SYMBOL}</span></div>
       </div>
 
       <HeatStrip rows={rows} holdingMap={holdingMap} onOpen={onOpen} />
@@ -1295,14 +1457,46 @@ function FeedView({
 
       {feedTab === "movers" && (
         <>
-          <div className="dash">
-            <MoverBoard rows={rows} holdingMap={holdingMap} fiatOf={fiatOf} metaOf={metaOf}
-                        onOpen={onOpen} title="top gainers" kind="up" icon={I.up} />
-            <MoverBoard rows={rows} holdingMap={holdingMap} fiatOf={fiatOf} metaOf={metaOf}
-                        onOpen={onOpen} title="top losers" kind="down" icon={I.down} />
+          {/* ribbon cards: the five biggest climbs, image-first, BUY on each */}
+          <div className="dash-h" style={{ marginTop: 4 }}>
+            <span className="lbl"><Icon d={I.up} width="12" height="12" />top 5 movers</span>
+            <span className="cnt">{gainers.length ? `+${gainSum} places` : "still board"}</span>
+          </div>
+          <div className="ribbon">
+            {rows.length === 0 ? (
+              <div className="empty" style={{ gridColumn: "1 / -1", padding: "20px 12px" }}>
+                waiting for the first board read…
+              </div>
+            ) : gainShow.slice(0, 3).map((r, i) => (
+              <RibbonCard key={r.id} r={r} kind="up" index={i} fiatOf={fiatOf}
+                          metaOf={metaOf} onOpen={onOpen} priceOf={priceOf} />
+            ))}
           </div>
 
-          <div className="dash-col">
+          <div className="dash-h" style={{ marginTop: 16 }}>
+            <span className="lbl"><Icon d={I.down} width="12" height="12" />top 5 losers</span>
+            <span className="cnt">{losers.length ? `−${loseSum} places` : "no fallers"}</span>
+          </div>
+          <div className="ribbon">
+            {rows.length === 0 ? (
+              <div className="empty" style={{ gridColumn: "1 / -1", padding: "20px 12px" }}>
+                waiting for the first board read…
+              </div>
+            ) : loseShow.slice(0, 3).map((r, i) => (
+              <RibbonCard key={r.id} r={r} kind="down" index={i} fiatOf={fiatOf}
+                          metaOf={metaOf} onOpen={onOpen} priceOf={priceOf} />
+            ))}
+          </div>
+
+          {/* card interaction: click a face, the story slides out beside it */}
+          <div className="dash-h" style={{ marginTop: 18 }}>
+            <span className="lbl"><Icon d={I.feed} width="12" height="12" />who they are · click a card</span>
+            <span className="cnt">{showcaseRows.length} faces</span>
+          </div>
+          <InteractionCards rows={rows.slice(0, 6)} fiatOf={fiatOf} metaOf={metaOf}
+                            onOpen={onOpen} priceOf={priceOf} bios={bios} />
+
+          <div className="dash-col" style={{ marginTop: 18 }}>
             <div className="dash-h">
               <span className="lbl"><Icon d={I.flame} width="12" height="12" />biggest moves</span>
               <span className="cnt">{chart.length} shown</span>
@@ -1331,6 +1525,19 @@ function FeedView({
       )}
 
       {feedTab === "bands" && (
+        <>
+          {/* creator wall: CMS-showcase cards, real faces, chevron opens the bio */}
+          <div className="dash-h" style={{ marginTop: 4 }}>
+            <span className="lbl"><Icon d={I.feed} width="12" height="12" />creator wall</span>
+            <span className="cnt">{showcaseRows.length} preview</span>
+          </div>
+          <div className="showcase">
+            {showcaseRows.map((r) => (
+              <ShowcaseCard key={r.id} r={r} fiatOf={fiatOf} metaOf={metaOf}
+                            onOpen={onOpen} priceOf={priceOf} bio={bios[r.name]} />
+            ))}
+          </div>
+
         <div className="dash">
           <RankBand from={1} to={10} label="top 10 · the head" rows={rows} holdingMap={holdingMap}
                     fiatOf={fiatOf} metaOf={metaOf} onOpen={onOpen} />
@@ -1341,6 +1548,7 @@ function FeedView({
           <RankBand from={41} to={Infinity} label="ranks 41+ · the tail" rows={rows} holdingMap={holdingMap}
                     fiatOf={fiatOf} metaOf={metaOf} onOpen={onOpen} />
         </div>
+        </>
       )}
 
       {feedTab === "held" && (

@@ -1,15 +1,17 @@
-"use client";
+import Landing from "./Landing.jsx";
 
-import dynamic from "next/dynamic";
-
-// The whole terminal is wallet-gated (Privy + wagmi), so it can only render in
-// the browser. Loading it client-only keeps the SSR shell tiny and lets Next
-// code-split the heavy web3 vendor chunk away from the first paint.
-const Terminal = dynamic(() => import("../src/Terminal.jsx").then((m) => m.Terminal), {
-  ssr: false,
-  loading: () => <div className="center-msg">initialising…</div>,
-});
+export const metadata = {
+  title: "Motion Markets — attention is the asset, rank is the price",
+  description:
+    "Trade the Motion leaderboard of top KOLs on X, settled onchain on Fluent Testnet. Price is 1000 ÷ rank, rebalanced with the board.",
+  openGraph: {
+    title: "Motion Markets",
+    description:
+      "Every creator on the Motion leaderboard is a share class. Price is 1000 ÷ rank. Trade the climb.",
+    type: "website",
+  },
+};
 
 export default function Page() {
-  return <Terminal />;
+  return <Landing />;
 }
