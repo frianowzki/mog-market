@@ -20,3 +20,9 @@ app/test-next.mjs
 app/probe-next.mjs
 app/shot-next.png
 shots/
+
+# scratch verification scripts + logs
+app/probe-*.mjs
+app/test-*.mjs
+app/shots-*.mjs
+app/*.log
