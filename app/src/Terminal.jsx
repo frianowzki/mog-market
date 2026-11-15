@@ -747,7 +747,7 @@ export function Terminal() {
 
             <div className="rail-net">
               <span className="rail-lbl">net worth</span>
-              <b className="num"><CountUp to={netWorth} decimals={netWorth < 100 ? 2 : 0} duration={1200} /></b>
+              <b className="num"><CountUp to={Number(netWorth) / 1e18} decimals={Number(netWorth) / 1e18 < 100 ? 2 : 0} duration={1200} /></b>
               <em className="num">
                 <ScrambleText text={fiatOf(netWorth)} duration={700} />
               </em>
