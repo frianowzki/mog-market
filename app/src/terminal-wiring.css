@@ -54,21 +54,20 @@
   align-items: start;
 }
 
-/* In-flow growth: the cell reserves the open card's height up front, so the
-   card expands inside its own column and never paints over a neighbour.
-   (Absolutely positioning it meant a 300px card escaping a 40px wrapper.) */
+/* The wrapper reserves the open card's footprint so the grid row keeps its
+   height, and the card itself is absolutely placed inside that reservation —
+   it expands downward into space that is already empty, never over a
+   neighbour (they live in their own non-overlapping grid cells). */
 .deck-row .mpc-wrap {
+  display: block;
   min-height: 40px;
   transition: min-height 300ms ease;
 }
 .deck-row .mpc-wrap:has(.mpc.open) { min-height: 300px; }
-
-/* the card is a button in normal flow, so the wrapper must not clip it */
-.deck-row .mpc-wrap { display: block; }
 .deck-row .mpc.open {
-  position: relative;
-  top: auto;
-  left: auto;
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 40;
 }
 
