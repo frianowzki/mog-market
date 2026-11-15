@@ -33,3 +33,5 @@ app/var-*.png
 app/cand-*.png
 app/desk-*.png
 app/final-*.png
+app/vp-*.png
+app/verify-*.mjs
