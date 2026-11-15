@@ -177,7 +177,7 @@ export default function TextMotion({
       {...rest}
     >
       {units.map((u, i) => {
-        if (/^\s+$/.test(u)) return <span key={i} aria-hidden="true"> </span>;
+        if (/^\s+$/.test(u)) return <span key={i} className="tm-sp" aria-hidden="true" style={{ whiteSpace: "pre" }}>{" "}</span>;
         const s = unitStyle(preset, active ? "on" : "off", i, stagger, delay);
         s.transition = trans;
         s.display = "inline-block";

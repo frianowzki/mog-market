@@ -32,7 +32,10 @@ html:not([data-theme="dark"]) .lp-navwrap .goo-nav { background: rgba(255, 255, 
 /* TextMotion renders each unit inline-block; the headline needs them to sit on
    one baseline, so kill the inline-block leading gap and keep the mask clean. */
 .lp-hero h1 .tm-line { display: inline; }
+/* only the animated units become inline-block; whitespace spans must stay
+   inline or the word gap collapses and the headline reads as one long token */
 .lp-hero h1 .tm-line > span { display: inline-block; }
+.lp-hero h1 .tm-line > .tm-sp { display: inline !important; }
 .lp-hero h1 em { font-style: italic; }
 .lp-hero-sub,
 .lp-hero p.lp-hero-sub {
