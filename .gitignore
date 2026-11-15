@@ -26,3 +26,10 @@ app/probe-*.mjs
 app/test-*.mjs
 app/shots-*.mjs
 app/*.log
+app/probe-*.png
+app/v-*.png
+app/vp-*.png
+app/var-*.png
+app/cand-*.png
+app/desk-*.png
+app/final-*.png
