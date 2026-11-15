@@ -1,0 +1,89 @@
+/* Landing wiring for the components ported from Framer.
+   Kept out of landing.css so the original layout rules stay untouched:
+   everything here is either a new wrapper class or a states override. */
+
+/* ---------------------------------------------------------- gooey nav shell */
+.lp-navwrap {
+  position: sticky;
+  top: 10px;
+  z-index: 40;
+  margin: 0 0 26px;
+  display: flex;
+  justify-content: flex-start;
+}
+.lp-navwrap .goo-nav {
+  width: 100%;
+  max-width: 100%;
+}
+/* rows of the goo capsule track the rail rhythm of the page, not a browser
+   default — the CTA sits in the same capsule so the nav reads as one object */
+.goo-cta {
+  flex: none;
+  height: 34px;
+  padding: 0 16px;
+  font-size: 10.5px !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html:not([data-theme="dark"]) .lp-navwrap .goo-nav { background: rgba(255, 255, 255, 0.78); }
+
+/* ------------------------------------------------------- hero text motion */
+/* TextMotion renders each unit inline-block; the headline needs them to sit on
+   one baseline, so kill the inline-block leading gap and keep the mask clean. */
+.lp-hero h1 .tm-line { display: inline; }
+.lp-hero h1 .tm-line > span { display: inline-block; }
+.lp-hero h1 em { font-style: italic; }
+.lp-hero-sub,
+.lp-hero p.lp-hero-sub {
+  max-width: 46ch;
+}
+
+/* -------------------------------------------------------- creator deck */
+.l-deck {
+  display: none;
+}
+
+/* ----------------------------------------------------------- rail submenu */
+.rail-nav { padding-top: 12px; }
+.rail-navwrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+}
+.rail-nav .rail-net { margin-top: auto; }
+.rail-nav .sbn { gap: 12px; }
+
+@media (max-width: 900px) {
+  .lp-navwrap .goo-nav { padding-left: 10px; }
+  .goo-cta { padding: 0 12px; font-size: 9.5px !important; }
+}
+
+@media (max-width: 760px) {
+  /* phones: swap the collapsed card grid for the swatch deck */
+  .l-cards-desktop { display: none; }
+  .l-deck { display: block; }
+  .lp-navwrap {
+    top: 6px;
+    margin-bottom: 18px;
+  }
+  .lp-navwrap .goo-nav {
+    flex-wrap: wrap;
+    border-radius: 22px;
+    padding: 6px;
+    gap: 6px;
+  }
+  .lp-navwrap .goo-track { flex: 1 1 100%; order: 2; }
+  .lp-navwrap .goo-brand { order: 1; padding-left: 6px; }
+  .lp-navwrap .goo-right { order: 1; margin-left: auto; }
+  .lp-navwrap .goo-item { padding: 0 11px; font-size: 10.5px; }
+}
+
+@media (max-width: 460px) {
+  .goo-cta {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 9px !important;
+  }
+  .lp-navwrap .goo-nav { --goo-h: 38px; }
+}

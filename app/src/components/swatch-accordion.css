@@ -1,0 +1,239 @@
+/* Swatch accordion — scoped under .swa.
+
+   Layout: one flex strip. The active panel takes the remaining space
+   (flex-grow: 5) while the others collapse to a 52px strip, so the strip never
+   reflows the page — only the internal weights change. Each panel holds three
+   stacked layers: the image swatch, a tint wash, and a bottom shade that keeps
+   the type legible. Collapsed panels show a rotated name; the active panel
+   reveals its body.
+
+   Intended for narrow viewports (the creator deck on phones), but it degrades
+   gracefully at any width because the body has its own min-width. */
+
+.swa {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  height: 340px;
+  touch-action: pan-y;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.swa:focus-visible { box-shadow: 0 0 0 2px var(--goo-acc, #d7ff3e); border-radius: 18px; }
+
+.swa-panel {
+  position: relative;
+  flex: 0 0 52px;
+  min-width: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid var(--line2, rgba(255, 255, 255, 0.14));
+  background: var(--paper, #0d0d0d);
+  transition:
+    flex-grow 620ms cubic-bezier(0.2, 0.9, 0.15, 1),
+    flex-basis 560ms cubic-bezier(0.2, 0.9, 0.15, 1),
+    border-radius 520ms cubic-bezier(0.2, 0.9, 0.15, 1),
+    border-color 320ms ease;
+  isolation: isolate;
+}
+.swa-panel.on {
+  flex-grow: 5;
+  flex-basis: 0;
+  cursor: default;
+  border-color: var(--goo-acc, #d7ff3e);
+}
+
+/* the swatch layers */
+.swa-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #24201c;
+  filter: saturate(104%);
+  transition: filter 520ms ease, transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 0;
+}
+.swa-panel:hover .swa-img { transform: scale(1.04); }
+.swa-panel.on .swa-img { filter: saturate(112%) contrast(1.02); }
+.swa-panel:not(.on) .swa-img { filter: saturate(58%) brightness(0.72); }
+
+.swa-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 42%, transparent) 0%, transparent 62%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.swa-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.28) 46%, rgba(0, 0, 0, 0.9) 100%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------- collapsed */
+.swa-strip {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  place-items: center;
+  padding: 12px 0;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+.swa-panel.on .swa-strip { opacity: 0; pointer-events: none; }
+
+.swa-rank {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.swa-vname {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+  max-height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* -------------------------------------------------------------- expanded */
+.swa-body {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 16px 15px 14px;
+  min-width: 190px;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(9px);
+  transition: opacity 280ms ease 90ms, transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1) 90ms;
+  pointer-events: none;
+}
+.swa-panel.on .swa-body { opacity: 1; transform: none; pointer-events: auto; }
+
+.swa-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.swa-kicker {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goo-acc, #d7ff3e);
+}
+.swa-price {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.swa-name {
+  font-family: var(--serif, Georgia, serif);
+  font-size: clamp(19px, 5vw, 24px);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+}
+.swa-bio {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.swa-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
+}
+.swa-tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+.swa-acts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+}
+.swa-buy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--goo-acc, #d7ff3e);
+  color: #0b0b0b;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 220ms ease, filter 220ms ease;
+}
+.swa-buy:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.swa-nav { display: inline-flex; gap: 4px; }
+.swa-nav button {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 200ms ease, opacity 200ms ease;
+}
+.swa-nav button:hover { background: rgba(255, 255, 255, 0.2); }
+.swa-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* -------------------------------------------------------------- responsive */
+@media (max-width: 420px) {
+  .swa { height: 300px; gap: 6px; }
+  .swa-panel { flex-basis: 42px; border-radius: 14px; }
+  .swa-body { min-width: 165px; padding: 13px 12px 11px; }
+  .swa-bio { -webkit-line-clamp: 2; }
+}
+@media (min-width: 761px) {
+  /* on wide screens the deck gets more room per panel */
+  .swa { height: 380px; }
+  .swa-panel { flex-basis: 64px; }
+  .swa-body { min-width: 240px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swa-panel, .swa-img, .swa-body, .swa-strip { transition: none; }
+}

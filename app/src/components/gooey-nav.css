@@ -1,0 +1,175 @@
+/* Liquid gooey nav — scoped under .goo-nav.
+
+   The trick is two stacked layers holding identical geometry:
+     .goo-liquid  → blur + contrast filter, so the pill and the hover dot fuse
+     .goo-labels  → same blur with `filter: blur(0)` free labels crisp on top
+   The pill is a real element that springs to the measured active item, and a
+   sheen sweeps across it so the surface reads as liquid rather than a shape. */
+
+.goo-nav {
+  --goo-h: 44px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 5px 5px 14px;
+  border: 1px solid var(--lp-line, rgba(255, 255, 255, 0.1));
+  border-radius: 999px;
+  background: rgba(12, 12, 12, 0.62);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--lp-ink, #f4f1ea);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  user-select: none;
+  isolation: isolate;
+}
+
+.goo-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.goo-brand i {
+  font-style: italic;
+  color: var(--lp-mute, #8f8a83);
+}
+
+/* ------------------------------------------------------------- the track */
+.goo-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--goo-h);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* filtered layer — everything inside melts into one blob */
+.goo-liquid {
+  position: absolute;
+  inset: 0;
+  filter: blur(7px) contrast(22) brightness(1.05);
+  -webkit-filter: blur(7px) contrast(22) brightness(1.05);
+  pointer-events: none;
+  z-index: 0;
+}
+.goo-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--goo-acc);
+  opacity: 0;
+  transform-origin: center;
+  transition:
+    transform 620ms cubic-bezier(0.2, 0.9, 0.15, 1),
+    width 520ms cubic-bezier(0.2, 0.9, 0.15, 1),
+    opacity 320ms ease;
+  overflow: hidden;
+}
+.goo-pill.in { opacity: 1; }
+
+/* surface tension: a soft highlight that drifts across the pill */
+.goo-sheen {
+  position: absolute;
+  inset: -40% -20%;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.55) 48%,
+    transparent 74%
+  );
+  animation: gooSheen 4.6s ease-in-out infinite;
+  opacity: 0.5;
+}
+@keyframes gooSheen {
+  0%, 100% { transform: translateX(-38%); }
+  55%      { transform: translateX(38%); }
+}
+
+/* the hover droplet: fuses with the pill through the blur */
+.goo-dot {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--goo-acc) 46%, transparent);
+  transform: scale(0.6);
+  animation: gooDotIn 260ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+@keyframes gooDotIn {
+  to { transform: scale(1); }
+}
+
+/* ------------------------------------------------------------- the labels */
+.goo-labels {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 2px;
+}
+.goo-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(244, 241, 234, 0.62);
+  font: inherit;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: color 260ms ease, transform 320ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  white-space: nowrap;
+}
+.goo-item:hover { color: #fff; }
+.goo-item.on {
+  color: #0b0b0b;
+  font-weight: 600;
+}
+.goo-item.on:hover { color: #0b0b0b; }
+.goo-item.on .goo-ico { color: #0b0b0b; }
+.goo-ico {
+  display: inline-flex;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+.goo-right { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------------------------------------------------------------- compact */
+.goo-nav.compact {
+  --goo-h: 38px;
+  padding: 4px 4px 4px 12px;
+  gap: 8px;
+}
+.goo-nav.compact .goo-item { padding: 0 11px; font-size: 10.5px; letter-spacing: 0.08em; }
+.goo-nav.compact .goo-liquid { filter: blur(5px) contrast(20) brightness(1.05); -webkit-filter: blur(5px) contrast(20) brightness(1.05); }
+
+/* ------------------------------------------------------------ light mode */
+html:not([data-theme="dark"]) .goo-nav {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #14110e;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goo-pill { transition: none; }
+  .goo-sheen { animation: none; }
+  .goo-dot { animation: none; }
+}

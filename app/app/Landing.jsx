@@ -5,11 +5,19 @@ import Link from "next/link";
 import LiquidGlassButton from "../src/components/LiquidGlassButton.jsx";
 import CrestGallery from "../src/components/CrestGallery.jsx";
 import SocialShare from "../src/components/SocialShare.jsx";
+import GooeyNav from "../src/components/GooeyNav.jsx";
+import Faq from "../src/components/Faq.jsx";
+import SwatchAccordion from "../src/components/SwatchAccordion.jsx";
+import TextMotion, { CountUp, ScrambleText } from "../src/components/TextMotion.jsx";
 import "../src/components/liquid-glass.css";
 import "../src/components/crest-gallery.css";
 import "../src/components/social-share.css";
+import "../src/components/gooey-nav.css";
+import "../src/components/faq.css";
+import "../src/components/swatch-accordion.css";
 import "./landing.css";
 import "./landing-framer.css";
+import "./landing-wiring.css";
 
 const BOARD_API = "/api/motion/leaderboard";
 const pfpOf = (id) => (id ? `https://leaderboard.motion.game/pfp/${id}.jpg` : null);
@@ -98,6 +106,97 @@ export default function Landing() {
   const img = (r) => pfpOf(r?.id);
   const bg = (r) => (img(r) ? { backgroundImage: `url(${img(r)})` } : { background: "linear-gradient(140deg,#2a2118,#4a3320)" });
 
+  /* nav sections — the gooey pill tracks whichever one is in view */
+  const [nav, setNav] = useState("board");
+  const NAV_ITEMS = useMemo(() => ([
+    { k: "board", label: "board" },
+    { k: "creators", label: "creators" },
+    { k: "how", label: "how it works" },
+    { k: "faq", label: "faq" },
+  ]), []);
+
+  useEffect(() => {
+    const ids = NAV_ITEMS.map((n) => n.k);
+    const io = new IntersectionObserver((entries) => {
+      const hit = entries.filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (hit) setNav(hit.target.id);
+    }, { rootMargin: "-45% 0px -45% 0px", threshold: [0.01, 0.25, 0.5] });
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, [NAV_ITEMS]);
+
+  const goSection = (k) => {
+    const el = document.getElementById(k);
+    if (!el) return;
+    setNav(k);
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  /* the mobile creator deck — same rows as the card grid, reshaped for the
+     swatch accordion: one panel open, the rest collapsed to a strip */
+  const deck = useMemo(() => top.map((r) => ({
+    id: r.id,
+    rank: r.position,
+    name: r.name,
+    img: pfpOf(r.id),
+    tint: (Number(r.delta) || 0) > 0 ? "#7dff9b" : (Number(r.delta) || 0) < 0 ? "#ff8a6b" : "#d7ff3e",
+    bio: (bios[r.name]?.bio || "").trim().slice(0, 170)
+      || `#${r.position} on the Motion board. Price is rank-locked, so an upward move in the feed is an upward move in the book.`,
+    price: `${money(priceOf(r.position))} FLUENT`,
+    tags: [
+      Number(r.delta) > 0 ? `+${Number(r.delta).toFixed(1)}%` : `${Number(r.delta || 0).toFixed(1)}%`,
+      "rank priced",
+    ],
+    onBuy: () => { window.location.href = "/app"; },
+  })), [top, bios]);
+
+  /* FAQ copy is written for this market, not pasted from a template — every
+     answer reflects how Motion Markets actually settles. */
+  const FAQ_ITEMS = useMemo(() => ([
+    {
+      id: "what",
+      q: "What is Motion Markets, exactly?",
+      a: "A price board for attention. Every creator on the Motion leaderboard becomes a share class whose price is 1000 ÷ rank, so a creator who climbs from #40 to #20 doubles in price without anyone trading it. You buy the climb before the rest of the feed notices.",
+      links: [{ label: "open the terminal", href: "/app" }],
+    },
+    {
+      id: "price",
+      q: "How does the price actually move?",
+      a: "Rank is the only input. The board re-snapshots the live leaderboard onchain, and price is derived from the new rank — no order book decides it, no market maker quotes it. If a creator holds rank, price holds; if they slip, so does the price.",
+    },
+    {
+      id: "buy",
+      q: "How do I buy a creator?",
+      a: "Sign in with X to get a wallet (or connect one you already have), then pick a creator on the board and buy units at the current rank price. Position, average entry, and PnL stay in the portfolio tab — buying never navigates you away from the terminal.",
+    },
+    {
+      id: "faucet",
+      q: "Do I need real FLUENT to try it?",
+      a: "No. The market is live on Fluent testnet, and the faucet in the rail drips testnet FLUENT on a cooldown so you can open a position the same minute you sign in. Nothing here touches mainnet funds.",
+    },
+    {
+      id: "fees",
+      q: "What does trading cost?",
+      a: "Only the gas the chain charges for the transaction. There is no platform fee, no spread, and no deposit or withdrawal step — your units sit in your own wallet, and you can read every trade on fluentscan.",
+    },
+    {
+      id: "sell",
+      q: "Can I get out whenever I want?",
+      a: "Yes. Selling returns testnet FLUENT at the price implied by the creator's current rank, so you are always liquid at the board price. The one risk is honest: if the creator drops in rank while you hold, the exit price drops with them.",
+    },
+    {
+      id: "rank",
+      q: "What decides who is on the board?",
+      a: "The Motion leaderboard does — the board is a mirror, not a jury. New names appear as the leaderboard re-snapshots, and each snapshot is pushed onchain so the ranks you trade against are the ones everyone else sees.",
+      links: [{ label: "view the live board", href: "#board" }],
+    },
+  ]), []);
+
+
   return (
     <div className="lp">
       {/* mist: three drifting, heavily blurred ribbons over near-black */}
@@ -106,26 +205,44 @@ export default function Landing() {
       <div className="lp-vig" aria-hidden="true" />
 
       <div className="lp-inner">
-        <nav className="lp-nav">
-          <span className="lp-brand"><Mark /> Motion <i>Markets</i></span>
-          <span className="lp-navlinks">
-            <a href="#board">board</a>
-            <a href="#creators">creators</a>
-            <a href="#buy">how it works</a>
-            <Link className="lp-pill solid" href="/app">enter terminal <ArrowUpRight /></Link>
-          </span>
-        </nav>
+        {/* liquid gooey nav: the pill melts between sections as you scroll,
+            and the terminal CTA rides the right edge of the same capsule */}
+        <div className="lp-navwrap">
+          <GooeyNav
+            items={NAV_ITEMS}
+            active={nav}
+            onChange={goSection}
+            accent="#d7ff3e"
+            brand={<>Motion <i>Markets</i></>}
+            right={
+              <Link className="lp-pill solid goo-cta" href="/app">
+                enter terminal <ArrowUpRight />
+              </Link>
+            }
+          />
+        </div>
 
         <header className="lp-hero">
           <span className="lp-eyebrow"><i className="dot" /> live on fluent testnet</span>
           <h1>
-            Attention is the asset.<br />
-            Rank is the <em>price</em>.
+            <TextMotion preset="rise" split="char" stagger={26} duration={900} as="span" className="tm-line">
+              Attention is the asset.
+            </TextMotion>
+            <br />
+            <TextMotion preset="rise" split="word" stagger={90} delay={280} duration={900} as="span" className="tm-line">
+              {"Rank is the "}
+            </TextMotion>
+            <TextMotion preset="blur-up" split="word" stagger={80} delay={820} duration={1000} as="em">
+              price
+            </TextMotion>
+            <TextMotion preset="fade" split="char" stagger={14} delay={980} duration={600} as="span">
+              .
+            </TextMotion>
           </h1>
-          <p>
+          <TextMotion preset="fade-up" split="word" stagger={22} delay={520} duration={800} as="p" className="lp-hero-sub">
             Every creator on the Motion leaderboard is a share class. Price is 1000 ÷ rank,
             rebalanced with the board. Buy the climb before the rest of the feed notices.
-          </p>
+          </TextMotion>
           <div className="lp-cta">
             <LiquidGlassButton
               href="/app"
@@ -235,14 +352,25 @@ export default function Landing() {
         </section>
 
         {/* ------------------------------- card interaction: click reveals bio */}
-        <section className="lp-section" id="buy">
+        <section className="lp-section" id="how">
           <div className="lp-shead">
             <div>
-              <h2>Click a card. Read the story.</h2>
+              <h2>
+                <TextMotion preset="fade-up" split="word" stagger={60} as="span">
+                  Click a card. Read the story.
+                </TextMotion>
+              </h2>
               <p>Every creator opens on a real biography — sourced, not generated.</p>
             </div>
           </div>
-          <div className="l-cards">
+
+          {/* phones get the swatch deck: one creator open, the rest collapsed to
+              a strip you can swipe. Wider screens keep the four-up card grid. */}
+          <div className="l-deck">
+            <SwatchAccordion items={deck} onChange={(i, it) => setOpenCard(it.id)} />
+          </div>
+
+          <div className="lp-cards l-cards-desktop">
             {top.slice(0, 4).map((r, i) => {
               const bio = bios[r.name];
               const on = openCard === r.id;
@@ -287,6 +415,18 @@ export default function Landing() {
             })}
           </div>
         </section>
+
+        {/* ------------------------------------------------------------- faq */}
+        <section className="lp-section" id="faq">
+          <Faq
+            eyebrow="the fine print"
+            title={<>Questions, <em>answered</em>.</>}
+            intro="Everything about how rank becomes price, and what actually settles onchain."
+            items={FAQ_ITEMS}
+            defaultOpenIndex={0}
+          />
+        </section>
+
 
         <section className="lp-close">
           <h2>Rank is the only <em>fundamental</em>.</h2>

@@ -11,9 +11,12 @@ import {
 import ExpandedCard from "./components/ExpandedCard.jsx";
 import TearTicket from "./components/TearTicket.jsx";
 import SocialShare from "./components/SocialShare.jsx";
+import SidebarNav from "./components/SidebarNav.jsx";
+import { CountUp, ScrambleText } from "./components/TextMotion.jsx";
 import "./components/expanded-card.css";
 import "./components/tear-ticket.css";
 import "./components/social-share.css";
+import "./components/sidebar-nav.css";
 import "./terminal-framer.css";
 
 /* ------------------------------------------------------------------ icons */
@@ -149,6 +152,88 @@ const NAV = [
   { k: "portfolio", label: "Portfolio", icon: I.portfolio },
   { k: "settings", label: "Settings", icon: I.settings },
 ];
+
+/* Desktop rail: same four destinations, but Markets/Portfolio/Settings each
+   own a real submenu tree. The children switch the same `view` key plus a
+   filter, so nothing in the app needs a second navigation concept. */
+const NAV_TREE = [
+  {
+    k: "feed",
+    label: "Feed",
+    icon: <Icon d={I.feed} width="15" height="15" />,
+  },
+  {
+    k: "markets",
+    label: "Markets",
+    icon: <Icon d={I.markets} width="15" height="15" />,
+    hint: "rank-priced",
+    children: [
+      {
+        label: "discover",
+        items: [
+          { k: "markets", label: "All creators", note: "board" },
+          { k: "markets:top", label: "Top 20", note: "rank" },
+          { k: "markets:movers", label: "Movers", note: "24h" },
+        ],
+      },
+      {
+        label: "watch",
+        items: [
+          { k: "markets:watch", label: "Watchlist" },
+          { k: "markets:new", label: "New listings" },
+        ],
+      },
+    ],
+  },
+  {
+    k: "portfolio",
+    label: "Portfolio",
+    icon: <Icon d={I.portfolio} width="15" height="15" />,
+    hint: "your book",
+    children: [
+      {
+        label: "holdings",
+        items: [
+          { k: "portfolio", label: "Positions", note: "open" },
+          { k: "portfolio:closed", label: "Closed" },
+        ],
+      },
+      {
+        label: "activity",
+        items: [
+          { k: "portfolio:orders", label: "Orders" },
+          { k: "portfolio:history", label: "History" },
+        ],
+      },
+    ],
+  },
+  {
+    k: "settings",
+    label: "Settings",
+    icon: <Icon d={I.settings} width="15" height="15" />,
+    hint: "wallet & display",
+    children: [
+      {
+        label: "account",
+        items: [
+          { k: "settings", label: "Wallet" },
+          { k: "settings:faucet", label: "Faucet", note: "12h" },
+        ],
+      },
+      {
+        label: "display",
+        items: [
+          { k: "settings:theme", label: "Theme" },
+          { k: "settings:about", label: "About" },
+        ],
+      },
+    ],
+  },
+];
+
+/* submenu keys carry a ":filter" suffix — collapse them onto the base view so
+   the existing view switch keeps working unchanged */
+const baseView = (k) => String(k || "").split(":")[0] || "feed";
 
 /* ------------------------------------------------------------------ widgets */
 
@@ -633,26 +718,39 @@ export function Terminal() {
         </>
       ) : (
         <div className="frame">
-          <nav className="rail" aria-label="sections">
+          <nav className={"rail" + (isNarrow ? "" : " rail-nav")} aria-label="sections">
             <BrandMark />
-            <div className="rail-group">
-              {NAV.map((n) => (
-                <button
-                  key={n.k}
-                  className={"rail-i" + (view === n.k ? " on" : "")}
-                  onClick={() => { setView(n.k); setSheet(false); }}
-                  title={n.label}
-                >
-                  <Icon d={n.icon} width="17" height="17" />
-                  <span>{n.label}</span>
-                </button>
-              ))}
-            </div>
+            {isNarrow ? (
+              <div className="rail-group">
+                {NAV.map((n) => (
+                  <button
+                    key={n.k}
+                    className={"rail-i" + (view === n.k ? " on" : "")}
+                    onClick={() => { setView(n.k); setSheet(false); }}
+                    title={n.label}
+                  >
+                    <Icon d={n.icon} width="17" height="17" />
+                    <span>{n.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="rail-navwrap">
+                <SidebarNav
+                  active={view}
+                  onChange={(k) => { setView(k); setSheet(false); }}
+                  groups={NAV_TREE}
+                  footer={null}
+                />
+              </div>
+            )}
 
             <div className="rail-net">
               <span className="rail-lbl">net worth</span>
-              <b className="num">{fmt(netWorth)}</b>
-              <em className="num">{fiatOf(netWorth)}</em>
+              <b className="num"><CountUp to={netWorth} decimals={netWorth < 100 ? 2 : 0} duration={1200} /></b>
+              <em className="num">
+                <ScrambleText text={fiatOf(netWorth)} duration={700} />
+              </em>
               <div className="rail-split num">
                 <span>liquid {fmt(fluent.balance)}</span>
                 <span>book {fmt(bookValue)}</span>
@@ -685,7 +783,7 @@ export function Terminal() {
           </nav>
 
           <main className="main">
-            {view === "markets" && (
+            {baseView(view) === "markets" && (
               <>
                 {hero}
 
@@ -765,7 +863,7 @@ export function Terminal() {
               </>
             )}
 
-            {view === "feed" && (
+            {baseView(view) === "feed" && (
               <FeedView
                 rows={rows}
                 holdingMap={holdingMap}
@@ -781,7 +879,7 @@ export function Terminal() {
               />
             )}
 
-            {view === "portfolio" && (
+            {baseView(view) === "portfolio" && (
               <PortfolioView
                 holdings={holdings}
                 entryKnown={entryKnown}
@@ -803,7 +901,7 @@ export function Terminal() {
               />
             )}
 
-            {view === "settings" && (
+            {baseView(view) === "settings" && (
               <section className="pane">
                 <div className="pane-h"><h2>Settings</h2><span className="num">saved in this browser</span></div>
 
@@ -889,7 +987,7 @@ export function Terminal() {
             )}
           </main>
 
-          {view === "markets" && !isNarrow && (
+          {baseView(view) === "markets" && !isNarrow && (
             <aside className="dealer">
               <div className="dealer-h">
                 <span className="t">{sel ? "trade ticket" : "select a creator"}</span>

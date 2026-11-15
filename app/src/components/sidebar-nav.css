@@ -1,0 +1,215 @@
+/* Submenu sidebar nav — scoped under .sbn.
+
+   The component replaces the app's flat rail with a rail + flyout pair. The
+   rail itself keeps the existing rail metrics (same paddings, same 12.5px
+   labels) so the terminal's rhythm does not shift; the new part is the flyout,
+   which reuses the paper/line palette and drops out of the rail on a 220ms
+   slide. In `sheet` mode the whole thing becomes an overlay panel for phones. */
+
+.sbn {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------- rail */
+.sbn-rail {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+.sbn-entry { position: relative; }
+
+.sbn-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink2);
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+.sbn-item:hover { background: var(--hover); color: var(--ink); }
+.sbn-item.on { background: var(--ink); color: var(--paper); }
+.sbn-item.on .sbn-ico { opacity: 1; }
+.sbn-item.open { color: var(--ink); }
+.sbn-item.open.on { color: var(--paper); }
+
+.sbn-ico {
+  display: inline-flex;
+  flex: none;
+  opacity: 0.75;
+  transition: opacity 150ms ease;
+}
+.sbn-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbn-chev {
+  display: inline-flex;
+  flex: none;
+  opacity: 0.45;
+  transition: transform 260ms cubic-bezier(0.2, 0.85, 0.2, 1), opacity 200ms ease;
+}
+.sbn-item.open .sbn-chev { transform: rotate(90deg); opacity: 1; }
+
+/* ---------------------------------------------------------------- flyout */
+.sbn-flyout {
+  position: absolute;
+  z-index: 60;
+  top: -10px;
+  left: calc(100% + 9px);
+  width: max-content;
+  min-width: 276px;
+  max-width: 420px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  transform-origin: left top;
+  animation: sbnIn 220ms cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+@keyframes sbnIn {
+  from { opacity: 0; transform: translateX(-7px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+.sbn-fly-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid var(--line2);
+}
+.sbn-fly-kicker {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.sbn-fly-hint {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: var(--mute);
+}
+
+.sbn-cols {
+  display: flex;
+  gap: 26px;
+}
+.sbn-col { display: grid; gap: 2px; align-content: start; min-width: 104px; }
+.sbn-col-head {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mute);
+  padding: 0 7px 5px;
+}
+
+.sbn-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  text-align: left;
+  cursor: pointer;
+  transition: background 130ms ease, color 130ms ease;
+}
+.sbn-child:hover { background: var(--hover); color: var(--ink); }
+.sbn-child em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+
+.sbn-foot { margin-top: auto; }
+
+/* ----------------------------------------------------------------- sheet */
+.sbn.sheet {
+  position: fixed;
+  z-index: 220;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(84vw, 320px);
+  padding: 16px 14px;
+  border-right: 1px solid var(--line2);
+  background: var(--paper2);
+  box-shadow: 24px 0 70px rgba(0, 0, 0, 0.42);
+  animation: sbnSheet 260ms cubic-bezier(0.2, 0.85, 0.2, 1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@keyframes sbnSheet {
+  from { transform: translateX(-103%); }
+  to   { transform: none; }
+}
+.sbn-sheet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 12px;
+}
+.sbn-sheet-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.sbn-min {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* in the sheet the flyout becomes an inline, indented block */
+.sbn.sheet .sbn-flyout {
+  position: static;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  margin: 3px 0 7px 14px;
+  padding: 9px 10px 11px;
+  box-shadow: none;
+  background: var(--paper3, var(--paper));
+  animation: none;
+}
+.sbn.sheet .sbn-cols { flex-direction: column; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sbn-flyout, .sbn.sheet { animation: none; }
+  .sbn-chev, .sbn-item { transition: none; }
+}
