@@ -8,6 +8,13 @@ import {
   makeMoney, ADDRESS, FAUCET, TOKEN, EXPLORER, fmt, priceOf, GAS_FAUCET_URL, PFP_URL,
   SYMBOL, deltaText, deltaDir, deltaOf,
 } from "./mog.js";
+import ExpandedCard from "./components/ExpandedCard.jsx";
+import TearTicket from "./components/TearTicket.jsx";
+import SocialShare from "./components/SocialShare.jsx";
+import "./components/expanded-card.css";
+import "./components/tear-ticket.css";
+import "./components/social-share.css";
+import "./terminal-framer.css";
 
 /* ------------------------------------------------------------------ icons */
 
@@ -1438,6 +1445,16 @@ function FeedView({
             <i className={"dot" + (liveFresh ? "" : " stale")} />{liveFresh ? "live" : "sync"}
           </span>
         </div>
+        <SocialShare
+          url="https://mog-market.vercel.app/app"
+          title="Motion Markets — attention is the asset, rank is the price."
+          networks={["twitter", "whatsapp", "copylink"]}
+          size={34}
+          style="outline"
+          effect="scale"
+          align="right"
+          class="feed-share"
+        />
       </div>
 
       <div className="lp-stats feed-stats">
@@ -1526,17 +1543,31 @@ function FeedView({
 
       {feedTab === "bands" && (
         <>
-          {/* creator wall: CMS-showcase cards, real faces, chevron opens the bio */}
+          {/* creator wall: the expanded-card band — the open card is the lead
+              name with its bio line, the rest collapse to ranked strips. */}
           <div className="dash-h" style={{ marginTop: 4 }}>
             <span className="lbl"><Icon d={I.feed} width="12" height="12" />creator wall</span>
-            <span className="cnt">{showcaseRows.length} preview</span>
+            <span className="cnt">{showcaseRows.length} preview · click a strip</span>
           </div>
-          <div className="showcase">
-            {showcaseRows.map((r) => (
-              <ShowcaseCard key={r.id} r={r} fiatOf={fiatOf} metaOf={metaOf}
-                            onOpen={onOpen} priceOf={priceOf} bio={bios[r.name]} />
-            ))}
-          </div>
+          <ExpandedCard
+            height={420}
+            collapsedWidth={62}
+            gap={9}
+            radius={18}
+            autoplay={false}
+            cards={showcaseRows.map((r, i) => ({
+              id: r.id,
+              img: r?.uuid || metaOf(r.name)?.uuid
+                ? `https://leaderboard.motion.game/pfp/${metaOf(r.name)?.uuid || r.uuid}.jpg`
+                : null,
+              index: String(i + 1).padStart(2, "0"),
+              title: r.name,
+              desc: bios[r.name]?.bio
+                || `#${r.position} on the Motion board at ${fmt(priceOf(r.position))} ${SYMBOL} a unit — rank sets the price, so every place is worth money.`,
+              meta: `rank #${r.position} · ${fmt(priceOf(r.position))} ${SYMBOL}`,
+              onSelect: () => onOpen(r.id),
+            }))}
+          />
 
         <div className="dash">
           <RankBand from={1} to={10} label="top 10 · the head" rows={rows} holdingMap={holdingMap}
@@ -1774,6 +1805,43 @@ function PortfolioView({
                 </div>
               );
             })}
+          </div>
+
+          {/* Trade receipts. Each open position gets a tear ticket: the body is
+              the position (side, units, entry), the stub is its live PnL. Tear the
+              stub to unfold the fill detail; share hands the receipt to the
+              sleek social row. */}
+          <div className="dash-col">
+            <div className="dash-h">
+              <span className="lbl">trade receipts · tear to open</span>
+              <span className="cnt">{holdings.length} tickets</span>
+            </div>
+            <div className="tk-stack">
+              {holdings.map((h) => {
+                const num = Number(h.pnlUsd || 0);
+                const entryPx = h.entry != null ? Number(h.entry) / 1e18 : null;
+                const pct = h.pnlPct != null ? Number(h.pnlPct) : 0;
+                return (
+                  <TearTicket
+                    key={h.id}
+                    side={num < 0 ? "sell" : "buy"}
+                    name={h.name}
+                    handle={metaOf(h.name)?.uuid || ""}
+                    qty={Number(h.units) / 1e18}
+                    price={Number(h.price) / 1e18}
+                    pnl={num}
+                    pnlPct={pct}
+                    quote={SYMBOL}
+                    serial={`#${String(h.position).padStart(4, "0")}`}
+                    when={Date.now()}
+                    watermark={String(h.position).padStart(2, "0")}
+                    realised={h.pnlAbs != null}
+                    onShare={() => onPosition(h.id)}
+                    class="tk-in-portfolio"
+                  />
+                );
+              })}
+            </div>
           </div>
 
           {best && Number(best.pnlUsd || 0) > 0 && (

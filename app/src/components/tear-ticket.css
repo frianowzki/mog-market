@@ -1,0 +1,271 @@
+/* Tear Ticket — ported Framer component styles.
+   The tear is three things working together:
+     1. a radial-gradient mask that punches semicircles out of the top and bottom
+        edges on the body/stub boundary (so the cut is transparent, not painted),
+     2. a dashed perforation line drawn against the same boundary,
+     3. a 6px offset+rotate on the stub when torn, which is what makes it look
+        physically separated instead of merely highlighted.
+   Masking is done on .tk (the wrapper) so the notches cut through both halves. */
+
+.tk-wrap { container-type: inline-size; }
+
+.tk {
+  /* the cut line sits between body and stub */
+  --stub-w: 208px;
+  --notch: 15px;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 300px;
+  border-radius: 22px;
+  background: transparent;
+  filter: drop-shadow(0 26px 50px rgba(0, 0, 0, .5));
+  transition: transform .5s cubic-bezier(.22,.9,.24,1);
+}
+
+/* body + stub share the outer radius, so the ticket reads as one rectangle */
+.tk-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 26px 30px 24px;
+  border-radius: 22px 0 0 22px;
+  background:
+    linear-gradient(168deg, #f7f3ea 0%, #efe9dc 55%, #e7e0d1 100%);
+  color: #16130e;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+.tk-stub {
+  position: relative;
+  flex: 0 0 var(--stub-w);
+  padding: 22px 20px 18px;
+  border: 0;
+  border-radius: 0 22px 22px 0;
+  background: linear-gradient(168deg, #211f1b 0%, #16140f 60%, #100f0c 100%);
+  color: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  transition: transform .52s cubic-bezier(.22,.9,.24,1), box-shadow .4s ease, background .4s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
+}
+
+/* ---- the notches + perforation ----------------------------------------
+   Each notch is its own 30x30 pseudo-element pinned to the cut line, filled
+   with the page colour and clipped to a semicircle by border-radius. Two
+   pseudo-elements on .tk (top/bottom) plus two on .tk-stub give four notches
+   without any mask-composite gymnastics. */
+
+.tk::before,
+.tk::after,
+.tk-stub::before,
+.tk-stub::after {
+  content: "";
+  position: absolute;
+  width: calc(var(--notch) * 2);
+  height: calc(var(--notch) * 2);
+  background: var(--tk-cut, #0b0a08);
+  pointer-events: none;
+  z-index: 6;
+}
+/* top + bottom notch on the body side of the seam */
+.tk::before { right: var(--stub-w); top: calc(var(--notch) * -1); transform: translateX(50%); border-radius: 0 0 999px 999px; }
+.tk::after  { right: var(--stub-w); bottom: calc(var(--notch) * -1); transform: translateX(50%); border-radius: 999px 999px 0 0; }
+/* matching half-notches cut from the stub so the tear reads through it too */
+.tk-stub::before { left: 0; top: calc(var(--notch) * -1); transform: translateX(-50%); border-radius: 0 0 0 999px; }
+.tk-stub::after  { left: 0; bottom: calc(var(--notch) * -1); transform: translateX(-50%); border-radius: 999px 0 0 0; }
+
+/* perforation line down the seam */
+.tk-perf {
+  position: absolute;
+  right: var(--stub-w);
+  top: calc(var(--notch) * 1.7);
+  bottom: calc(var(--notch) * 1.7);
+  width: 2px;
+  transform: translateX(50%);
+  background: repeating-linear-gradient(180deg, rgba(0, 0, 0, .32) 0 7px, transparent 7px 14px);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity .4s ease;
+}
+.tk.is-torn .tk-perf { opacity: .35; }
+
+/* ---- body content ----------------------------------------------------- */
+.tk-mark {
+  position: absolute;
+  right: -8px; bottom: -34px;
+  font: 600 clamp(120px, 26cqw, 260px)/0.8 var(--serif, Georgia, "Times New Roman", serif);
+  letter-spacing: -.05em;
+  color: rgba(22, 19, 14, .055);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+.tk-head {
+  position: relative;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 26px;
+}
+.tk-kicker { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.tk-pill {
+  display: inline-flex; align-items: center;
+  padding: 5px 11px; border-radius: 999px;
+  font: 700 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.tk-pill-buy { background: #16130e; color: #d7ff3e; }
+.tk-pill-sell { background: #16130e; color: #ffb4a2; }
+.tk-handle {
+  font: 500 12px/1 var(--mono, ui-monospace, monospace);
+  color: rgba(22, 19, 14, .5);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tk-serial {
+  font: 500 11px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+  color: rgba(22, 19, 14, .42);
+  flex: 0 0 auto;
+}
+.tk-name {
+  position: relative;
+  margin: 0 0 12px;
+  font: 500 clamp(28px, 5.2cqw, 52px)/1.02 var(--serif, Georgia, "Times New Roman", serif);
+  letter-spacing: -.028em;
+  color: #14110c;
+  overflow-wrap: anywhere;
+}
+.tk-sub {
+  position: relative;
+  margin: 0 0 30px;
+  max-width: 48ch;
+  font: 400 clamp(12px, 1.4cqw, 14.5px)/1.5 var(--sans, ui-sans-serif, system-ui, sans-serif);
+  color: rgba(22, 19, 14, .6);
+}
+.tk-cols {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(22, 19, 14, .14);
+}
+.tk-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tk-lab {
+  font: 600 9.5px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(22, 19, 14, .4);
+}
+.tk-val {
+  font: 500 clamp(12px, 1.5cqw, 15px)/1.2 var(--sans, ui-sans-serif, system-ui, sans-serif);
+  color: #16130e;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---- detail panel (revealed after tear) -------------------------------- */
+.tk-detail {
+  position: relative;
+  display: grid;
+  gap: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height .55s cubic-bezier(.22,.9,.24,1), opacity .4s ease .08s, margin-top .45s ease;
+}
+.tk.is-torn .tk-detail { max-height: 240px; opacity: 1; margin-top: 20px; }
+.tk-drow {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px dashed rgba(22, 19, 14, .18);
+  font: 400 12.5px/1.3 var(--sans, ui-sans-serif, system-ui, sans-serif);
+  color: rgba(22, 19, 14, .62);
+}
+.tk-drow b { color: #16130e; font-weight: 600; text-align: right; }
+.tk-drow b.up { color: #1c7a3e; }
+.tk-drow b.dn { color: #b3261e; }
+.tk-mono { font-family: var(--mono, ui-monospace, monospace); font-size: 11.5px; }
+.tk-share {
+  margin-top: 14px; align-self: start;
+  padding: 9px 16px; border-radius: 999px;
+  border: 1px solid rgba(22, 19, 14, .24);
+  background: transparent; color: #16130e;
+  font: 600 11.5px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em; cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.tk-share:hover { background: #16130e; color: #f7f3ea; border-color: #16130e; }
+
+/* ---- stub content ----------------------------------------------------- */
+.tk-stub-top {
+  font: 500 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .2em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .45);
+}
+.tk-stub-main {
+  font: 500 clamp(22px, 3.4cqw, 32px)/1 var(--serif, Georgia, serif);
+  letter-spacing: -.02em;
+  color: #fff;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.tk-stub-main.up { color: #9dffb0; }
+.tk-stub-main.dn { color: #ff9d8f; }
+.tk-stub-sub {
+  font: 500 11px/1.2 var(--mono, ui-monospace, monospace);
+  letter-spacing: .04em;
+  color: rgba(255, 255, 255, .55);
+  text-align: center;
+}
+.tk-barcode {
+  display: flex; align-items: stretch; gap: 2px;
+  width: 100%; height: 34px;
+  margin: 4px 0;
+}
+.tk-barcode i {
+  display: block; background: rgba(255, 255, 255, .82); border-radius: 1px;
+}
+.tk-tear {
+  font: 500 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .12em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .42);
+  transition: color .2s ease;
+}
+.tk-stub:hover .tk-tear { color: rgba(255, 255, 255, .9); }
+
+/* ---- torn state ------------------------------------------------------- */
+.tk.is-torn .tk-stub {
+  transform: translate(9px, 0) rotate(1.6deg);
+  background: linear-gradient(168deg, #26231d 0%, #191710 60%, #131109 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), -18px 10px 34px -14px rgba(0,0,0,.65);
+}
+.tk-stub:focus-visible { outline: 2px solid #d7ff3e; outline-offset: 3px; }
+
+/* ---- footer stamp ----------------------------------------------------- */
+.tk-sell-stamp {
+  position: absolute; top: 24px; right: 26px;
+}
+
+/* ---- responsive ------------------------------------------------------- */
+@container (max-width: 700px) {
+  .tk { flex-direction: column; }
+  .tk-body { border-radius: 22px 22px 0 0; padding: 22px 22px 20px; }
+  .tk-stub { flex: 0 0 auto; border-radius: 0 0 22px 22px; flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+  .tk-barcode { width: 100%; height: 26px; }
+  .tk-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tk::before, .tk::after { display: none; }
+  .tk.is-torn .tk-stub { transform: translate(0, 7px) rotate(.6deg); }
+  .tk-mark { font-size: 120px; bottom: -20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk, .tk-stub, .tk-detail, .tk-share { transition-duration: .01ms !important; }
+}

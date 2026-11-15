@@ -1,0 +1,152 @@
+/* Liquid Glass Button — ported Framer component styles.
+   Layer stack (back → front): backdrop (blur+saturate) → tint → rim → sheen → rimlight → content.
+   The glass reads as glass because the rim is asymmetric: bright inset from the
+   top-left, dark inset from the bottom-right, plus a 1px inner specular line. */
+
+.lgb {
+  --h: 46px;
+  --px: 22px;
+  --r: 999px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--h);
+  padding: 0 var(--px);
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: #fff;
+  font: 600 14px/1 var(--sans, ui-sans-serif, system-ui, sans-serif);
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  transition: transform .18s cubic-bezier(.34,1.4,.64,1), box-shadow .25s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lgb-sm { --h: 36px; --px: 16px; --r: 12px; font-size: 12.5px; }
+.lgb-md { --h: 46px; --px: 22px; --r: 999px; }
+.lgb-lg { --h: 56px; --px: 28px; --r: 999px; font-size: 15.5px; }
+
+/* --- layers ------------------------------------------------------------- */
+.lgb-backdrop, .lgb-tint, .lgb-rim, .lgb-sheen, .lgb-rimlight {
+  position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+}
+.lgb-backdrop {
+  z-index: -3;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  background: rgba(255,255,255,.06);
+}
+.lgb-tint { z-index: -2; }
+.lgb-rim  { z-index: -1; }
+.lgb-sheen { z-index: 0; }
+.lgb-rimlight { z-index: 0; }
+
+/* --- variant: clear ---------------------------------------------------- */
+.lgb-clear .lgb-backdrop { background: rgba(255,255,255,.08); }
+.lgb-clear .lgb-tint { background: linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.04) 45%, rgba(255,255,255,.02)); }
+.lgb-clear .lgb-rim {
+  box-shadow:
+    inset 1px 1px 1px rgba(255,255,255,.55),
+    inset -1px -1px 1px rgba(255,255,255,.16),
+    inset 0 0 12px rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.22);
+}
+.lgb-clear { color: #fff; }
+
+/* --- variant: tinted (accent-tinted glass) ------------------------------ */
+.lgb-tinted .lgb-backdrop {
+  background: color-mix(in srgb, var(--acc, #d7ff3e) 22%, transparent);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+}
+.lgb-tinted .lgb-tint {
+  background: linear-gradient(150deg,
+    color-mix(in srgb, var(--acc, #d7ff3e) 40%, transparent),
+    color-mix(in srgb, var(--acc, #d7ff3e) 12%, transparent) 55%,
+    rgba(255,255,255,.05));
+}
+.lgb-tinted .lgb-rim {
+  border: 1px solid color-mix(in srgb, var(--acc, #d7ff3e) 55%, #fff 20%);
+  box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,.7),
+    inset -1px -1px 2px color-mix(in srgb, var(--acc, #d7ff3e) 45%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--acc, #d7ff3e) 25%, transparent);
+}
+.lgb-tinted { color: #0b0a08; }
+
+/* --- variant: frost (light glass on dark) ------------------------------- */
+.lgb-frost .lgb-backdrop { background: rgba(255,255,255,.14); backdrop-filter: blur(26px) saturate(140%); -webkit-backdrop-filter: blur(26px) saturate(140%); }
+.lgb-frost .lgb-tint { background: linear-gradient(160deg, rgba(255,255,255,.42), rgba(255,255,255,.12) 60%, rgba(255,255,255,.06)); }
+.lgb-frost .lgb-rim {
+  border: 1px solid rgba(255,255,255,.6);
+  box-shadow: inset 1px 1px 2px rgba(255,255,255,.95), inset -1px -1px 3px rgba(180,190,200,.35);
+}
+.lgb-frost { color: #0e0d0b; }
+
+/* --- specular sheen following the pointer ------------------------------ */
+.lgb-sheen {
+  background: radial-gradient(circle at var(--sx) var(--sy),
+    rgba(255,255,255,.55) 0%, rgba(255,255,255,.16) 18%, transparent 46%);
+  opacity: 0;
+  transition: opacity .3s ease;
+  mix-blend-mode: soft-light;
+}
+.lgb[data-sheen="on"] .lgb-sheen { opacity: 1; }
+
+/* --- top rim-light streak (the "liquid" catch) ------------------------- */
+.lgb-rimlight {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.5) 0 1px, transparent 1px),
+    linear-gradient(100deg, transparent 12%, rgba(255,255,255,.35) 32%, transparent 46%);
+  opacity: .55;
+  mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 72%);
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 0%, #000 30%, transparent 72%);
+  transition: opacity .3s ease, transform .6s ease;
+}
+.lgb:hover .lgb-rimlight { opacity: .85; transform: translateX(6%); }
+
+/* --- content ----------------------------------------------------------- */
+.lgb-content {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.lgb-ico, .lgb-trail { display: inline-flex; align-items: center; }
+.lgb-trail { transition: transform .22s cubic-bezier(.34,1.4,.64,1); }
+.lgb:hover .lgb-trail { transform: translateX(3px); }
+
+/* --- interaction ------------------------------------------------------- */
+.lgb:hover { transform: translateY(-1px); }
+.lgb:hover .lgb-rim { box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,.7),
+    inset -1px -1px 2px rgba(255,255,255,.24),
+    inset 0 0 20px rgba(255,255,255,.1); }
+.lgb:active { transform: translateY(1px) scale(.985); transition-duration: .09s; }
+.lgb:active .lgb-sheen { opacity: .45; }
+.lgb:focus-visible { outline: 2px solid rgba(255,255,255,.7); outline-offset: 3px; }
+.lgb:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* outer glow pooled under the button */
+.lgb::after {
+  content: ""; position: absolute; inset: 18% 8% -22% 8%; z-index: -4;
+  background: radial-gradient(closest-side, rgba(255,255,255,.24), transparent 72%);
+  filter: blur(14px); opacity: 0; transition: opacity .3s ease; pointer-events: none;
+}
+.lgb:hover::after { opacity: 1; }
+
+/* fallback when backdrop-filter is unsupported */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lgb-clear .lgb-backdrop { background: rgba(30,28,24,.72); }
+  .lgb-tinted .lgb-backdrop { background: color-mix(in srgb, var(--acc, #d7ff3e) 62%, #000 30%); }
+  .lgb-frost .lgb-backdrop { background: rgba(255,255,255,.86); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lgb, .lgb *, .lgb::after { transition-duration: .01ms !important; animation: none !important; }
+}

@@ -1,1 +1,5 @@
 .vercel
+
+# component proof harness output
+proof-*.png
+proof-build/

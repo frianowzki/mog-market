@@ -1,0 +1,70 @@
+/* Sleek Social Share — ported Framer component styles.
+   Springs from the original (stiffness 400/damping 18 for scale, 300/20 for
+   glow, 400/20 for slide) approximated with cubic-bezier undershoot. */
+
+.ss { display: inline-flex; flex-direction: column; gap: 8px; }
+.ss-lbl {
+  font: 600 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--mut, #8a8378);
+}
+.ss-row { display: flex; align-items: center; flex-wrap: wrap; position: relative; }
+
+.ss-slot { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+
+.ss-glow {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.2);
+  filter: blur(8px); z-index: -1; pointer-events: none;
+  animation: ss-glow-in .28s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes ss-glow-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+.ss-btn {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  padding: 0; cursor: pointer; outline: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.1);
+  transition: transform .26s cubic-bezier(.34,1.56,.64,1),
+              box-shadow .26s ease, filter .2s ease, background-color .2s ease, color .2s ease;
+}
+.ss-btn:focus-visible { box-shadow: 0 0 0 2px var(--paper, #12100e), 0 0 0 4px currentColor; }
+
+/* effect: scale */
+.ss-scale:hover, .ss-scale.on { transform: scale(1.12) translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.28), 0 6px 12px rgba(0,0,0,.18); }
+.ss-scale:active { transform: scale(.92); transition-duration: .1s; }
+
+/* effect: glow */
+.ss-glow-btn, .ss-btn[data-effect="glow"] { }
+.ss-btn.ss-glow:hover, .ss-btn.ss-glow.on { transform: scale(1.05) translateY(-2px);
+  filter: brightness(1.1) saturate(1.15); }
+.ss-btn.ss-glow:active { transform: scale(.95); filter: brightness(.95); }
+
+/* effect: slide */
+.ss-btn.ss-slide:hover, .ss-btn.ss-slide.on { transform: translateY(-8px) scale(1.06);
+  box-shadow: 0 16px 36px rgba(0,0,0,.32), 0 8px 16px rgba(0,0,0,.22); }
+.ss-btn.ss-slide:active { transform: translateY(-3px) scale(.94); }
+
+/* effect: press (default) */
+.ss-btn.ss-press:hover, .ss-btn.ss-press.on { transform: scale(1.02);
+  box-shadow: 0 8px 22px rgba(0,0,0,.22), 0 4px 8px rgba(0,0,0,.14); }
+.ss-btn.ss-press:active { transform: scale(.98); }
+
+/* tooltip */
+.ss-tip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translate(-50%, 6px) scale(.92);
+  padding: 5px 9px; border-radius: 7px; background: #111; color: #fff;
+  font: 600 10px/1 var(--mono, ui-monospace, monospace); letter-spacing: .04em; white-space: nowrap;
+  opacity: 0; pointer-events: none; z-index: 5;
+  transition: opacity .18s ease, transform .24s cubic-bezier(.34,1.4,.64,1);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+.ss-btn:hover .ss-tip, .ss-btn:focus-visible .ss-tip { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+/* copy-link success tint */
+.ss-btn.done { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
+
+@media (max-width: 520px) {
+  .ss-row { justify-content: flex-start !important; }
+}

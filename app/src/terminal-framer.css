@@ -1,0 +1,36 @@
+/* Glue layer for the ported Framer components inside the terminal shell.
+   Only layout/spacing overrides — component chrome lives with the component. */
+
+/* ---- feed header share row ------------------------------------------- */
+.feed-hero { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.feed-hero > div:first-child { flex: 1 1 320px; min-width: 0; }
+.feed-share { margin-left: auto; flex: 0 0 auto; align-self: flex-start; }
+.feed-share .ss-btn { box-shadow: none; }
+.feed-share .ss-btn.ss-outline { border-width: 1.5px; }
+
+/* ---- portfolio tear tickets ------------------------------------------ */
+.tk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 6px 0 4px;
+}
+.tk-in-portfolio { --tk-cut: var(--paper, #0b0a08); }
+.tk-in-portfolio .tk { max-width: 860px; }
+
+/* the ticket body is cream — make the notches read against the shell */
+.tk-in-portfolio .tk::before,
+.tk-in-portfolio .tk::after,
+.tk-in-portfolio .tk-stub::before,
+.tk-in-portfolio .tk-stub::after {
+  background: var(--paper, #0b0a08);
+}
+
+/* ---- creator wall band ------------------------------------------------ */
+/* the expanded-card band wants a little breathing room above the rank bands */
+.pane .ec { margin: 6px 0 18px; }
+
+@media (max-width: 900px) {
+  .feed-share { margin-left: 0; }
+  .tk-in-portfolio .tk { --stub-w: 168px; }
+}

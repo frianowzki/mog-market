@@ -1,0 +1,144 @@
+/* Crest Gallery — ported Framer component styles.
+   The track is a normal horizontal scroller (so keyboard, wheel and touch all
+   work); JS only paints the 3D transform per card from its distance to centre.
+   Perspective lives on the track, not on each card, so all cards share one
+   vanishing point — that's what makes the band read as a single arc. */
+
+.cg {
+  position: relative;
+  width: 100%;
+  padding-block: 30px;
+}
+.cg-track {
+  display: flex;
+  align-items: center;
+  gap: var(--cg-gap, 28px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+  padding: calc(var(--cg-h, 460px) * 0.06) 50vw calc(var(--cg-h, 460px) * 0.09);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.cg-track::-webkit-scrollbar { display: none; }
+
+.cg-card {
+  position: relative;
+  flex: 0 0 var(--cg-w, 300px);
+  width: var(--cg-w, 300px);
+  height: var(--cg-h, 460px);
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  transition: filter .3s ease;
+  scroll-snap-align: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  /* before JS measures, show them flat so nothing flashes transposed */
+  opacity: 1;
+}
+.cg-track[data-ready="yes"] .cg-card { transition: filter .3s ease, opacity .3s ease; }
+
+.cg-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: var(--cg-r, 16px);
+  overflow: hidden;
+  background: #16140f;
+  box-shadow:
+    0 30px 70px -26px rgba(0, 0, 0, .75),
+    0 8px 24px -12px rgba(0, 0, 0, .5),
+    0 0 0 1px rgba(255, 255, 255, .08) inset;
+  transform: translateZ(0);
+}
+.cg-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform .6s cubic-bezier(.22,.9,.24,1);
+}
+.cg-card:hover .cg-frame img { transform: scale(1.045); }
+
+.cg-fallback {
+  display: grid; place-items: center;
+  width: 100%; height: 100%;
+  background: linear-gradient(150deg, #26221b, #100f0c 72%);
+  color: rgba(255, 255, 255, .55);
+  font: 600 46px/1 var(--serif, Georgia, serif);
+  text-transform: uppercase;
+}
+
+/* the glass catch-light across the top of the print */
+.cg-shine {
+  position: absolute; inset: 0;
+  background: linear-gradient(118deg, rgba(255,255,255,.22) 0%, transparent 24%, transparent 72%, rgba(255,255,255,.09) 100%);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.cg-cap {
+  position: absolute; left: 0; right: 0; bottom: -2px;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 34px 16px 14px;
+  background: linear-gradient(0deg, rgba(0,0,0,.82), transparent);
+  border-radius: 0 0 var(--cg-r, 16px) var(--cg-r, 16px);
+  pointer-events: none;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .3s ease, transform .3s cubic-bezier(.22,.9,.24,1);
+}
+.cg-card:hover .cg-cap { opacity: 1; transform: none; }
+.cg-t {
+  font: 500 15px/1.2 var(--serif, Georgia, serif);
+  color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cg-c {
+  font: 500 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .62);
+}
+
+/* ---- nav -------------------------------------------------------------- */
+.cg-nav {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-top: 26px;
+}
+.cg-btn {
+  width: 38px; height: 38px; border-radius: 999px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(255, 255, 255, .05);
+  color: #fff;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.cg-btn:hover { background: rgba(255, 255, 255, .14); border-color: rgba(255,255,255,.34); transform: translateY(-1px); }
+.cg-btn:active { transform: translateY(1px) scale(.97); }
+.cg-hint {
+  font: 500 10px/1 var(--mono, ui-monospace, monospace);
+  letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .34);
+}
+
+@media (max-width: 760px) {
+  .cg-track { perspective: 900px; padding-inline: 22vw; }
+  .cg-card { flex-basis: min(72vw, 260px); width: min(72vw, 260px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-track { perspective: none; }
+  .cg-card { transform: none !important; opacity: 1 !important; filter: none !important; }
+  .cg-card, .cg-frame img, .cg-cap { transition-duration: .01ms !important; }
+}

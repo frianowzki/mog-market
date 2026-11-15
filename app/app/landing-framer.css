@@ -1,0 +1,29 @@
+/* Glue layer: makes the ported Framer components sit inside the existing
+   Motion Markets landing rhythm without fighting landing.css. Only overrides
+   and spacing here — all component chrome lives in the component CSS files. */
+
+/* ---- CTA row: the glass buttons are taller than the old pills ---------- */
+.lp-cta { align-items: center; gap: 14px; flex-wrap: wrap; }
+.lp-cta .lgb { text-decoration: none; }
+
+/* the tinted button needs the accent token available to color-mix */
+.lp { --acc: #d7ff3e; }
+
+/* ---- crest section: pull the band full-bleed so cards run to the edges -- */
+#creators .cg { margin-inline: -24px; }
+
+/* the nav pill inside the section headlines stays as it was */
+#creators .lp-shead { margin-bottom: 18px; }
+
+/* ---- closing block ---------------------------------------------------- */
+.lp-close { display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+.lp-close .lp-close-cta { margin-top: 4px; }
+.lp-close .lgb { text-decoration: none; }
+.lp-share { margin-top: 10px; padding-top: 20px; width: 100%; border-top: 1px solid rgba(255, 255, 255, .08); }
+.lp-share .ss-lbl { color: rgba(255, 255, 255, .38); }
+
+@media (max-width: 720px) {
+  .lp-cta { width: 100%; }
+  .lp-cta .lgb { flex: 1 1 auto; justify-content: center; }
+  #creators .cg { margin-inline: -18px; }
+}

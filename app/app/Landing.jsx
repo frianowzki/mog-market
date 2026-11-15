@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import LiquidGlassButton from "../src/components/LiquidGlassButton.jsx";
+import CrestGallery from "../src/components/CrestGallery.jsx";
+import SocialShare from "../src/components/SocialShare.jsx";
+import "../src/components/liquid-glass.css";
+import "../src/components/crest-gallery.css";
+import "../src/components/social-share.css";
 import "./landing.css";
+import "./landing-framer.css";
 
 const BOARD_API = "/api/motion/leaderboard";
 const pfpOf = (id) => (id ? `https://leaderboard.motion.game/pfp/${id}.jpg` : null);
@@ -15,11 +22,6 @@ const money = (n) =>
 const ArrowUpRight = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M7 17 17 7M9 7h8v8" />
-  </svg>
-);
-const ArrowDown = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 9l6 6 6-6" />
   </svg>
 );
 const Mark = () => (
@@ -86,6 +88,13 @@ export default function Landing() {
   const slipping = rows.filter((r) => Number(r.delta) < 0).length;
   const total = rows.length;
 
+  /* The crest wants enough cards to fill the band and then some, so it takes a
+     wider slice than the old static wall did — still straight off the board. */
+  const gallery = useMemo(() => {
+    const pick = rows.filter((r) => pfpOf(r.id)).slice(0, 14);
+    return pick.length >= 5 ? pick : rows.slice(0, 14);
+  }, [rows]);
+
   const img = (r) => pfpOf(r?.id);
   const bg = (r) => (img(r) ? { backgroundImage: `url(${img(r)})` } : { background: "linear-gradient(140deg,#2a2118,#4a3320)" });
 
@@ -118,8 +127,18 @@ export default function Landing() {
             rebalanced with the board. Buy the climb before the rest of the feed notices.
           </p>
           <div className="lp-cta">
-            <Link className="lp-pill solid" href="/app">open the terminal <ArrowUpRight /></Link>
-            <a className="lp-pill" href="#board">see today&apos;s movers</a>
+            <LiquidGlassButton
+              href="/app"
+              variant="tinted"
+              size="lg"
+              trailing={<ArrowUpRight />}
+              style={{ "--acc": "#d7ff3e" }}
+            >
+              open the terminal
+            </LiquidGlassButton>
+            <LiquidGlassButton href="#board" variant="clear" size="lg">
+              see today&apos;s movers
+            </LiquidGlassButton>
           </div>
 
           <div className="lp-stats" id="board">
@@ -201,19 +220,18 @@ export default function Landing() {
             </div>
             <Link className="lp-pill" href="/app">all {total || ""} creators <ArrowUpRight /></Link>
           </div>
-          <div className="l-showcase">
-            {top.map((r) => (
-              <Link key={r.id} className="l-sc" href="/app">
-                <span className="l-sc-img" style={bg(r)} />
-                <span className="l-sc-shade" />
-                <span className="l-sc-chev"><ArrowDown /></span>
-                <span className="l-sc-txt">
-                  <b>{r.name}</b>
-                  <span>rank #{r.position} · {money(priceOf(r.position))} F</span>
-                </span>
-              </Link>
-            ))}
-          </div>
+          <CrestGallery
+            items={gallery.map((r) => ({
+              id: r.id || r.name,
+              img: img(r),
+              title: r.name,
+              caption: `rank #${r.position} · ${money(priceOf(r.position))} F`,
+              onClick: () => { window.location.href = "/app"; },
+            }))}
+            height={430}
+            width={296}
+            gap={26}
+          />
         </section>
 
         {/* ------------------------------- card interaction: click reveals bio */}
@@ -273,7 +291,27 @@ export default function Landing() {
         <section className="lp-close">
           <h2>Rank is the only <em>fundamental</em>.</h2>
           <p>Fluent Testnet · settled onchain · 5,000 FLUENT faucet every 12 hours.</p>
-          <Link className="lp-pill solid" href="/app">enter the terminal <ArrowUpRight /></Link>
+          <LiquidGlassButton
+            href="/app"
+            variant="frost"
+            size="lg"
+            trailing={<ArrowUpRight />}
+            class="lp-close-cta"
+          >
+            enter the terminal
+          </LiquidGlassButton>
+
+          <div className="lp-share">
+            <SocialShare
+              url="https://mog-market.vercel.app"
+              title="Motion Markets — attention is the asset, rank is the price."
+              networks={["twitter", "linkedin", "whatsapp", "copylink"]}
+              size={42}
+              style="brand"
+              effect="slide"
+              label="pass the board on"
+            />
+          </div>
         </section>
 
         <footer className="lp-foot">
