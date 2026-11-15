@@ -72,16 +72,29 @@
 }
 
 @media (max-width: 860px) {
-  /* touch: no hover, so the deck becomes a horizontal rail the user scrolls */
+  /* touch: no hover, so the deck becomes a horizontal rail the user scrolls.
+     Columns are 250px — the OPEN card's width — so an opened card fills its
+     own cell instead of spilling into and burying the next one (150px columns
+     left the card 100px wider than the cell it grew in). */
   .deck-row {
     grid-auto-flow: column;
-    grid-auto-columns: minmax(150px, 1fr);
+    grid-auto-columns: 250px;
     grid-template-columns: none;
     overflow-x: auto;
     scrollbar-width: none;
     padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
   .deck-row::-webkit-scrollbar { display: none; }
+  /* a 250px-wide tap target beats a 180px pill with a 70px dead gutter */
+  .deck-row .mpc-wrap { scroll-snap-align: start; }
+  .deck-row .mpc:not(.open) { width: 100%; }
+  /* relative, not absolute: the row has overflow-x:auto, which makes the
+     cross axis clip too, so an absolutely placed 300px card inside a 44px
+     row would be cut vertically. In flow the row grows instead. */
   .deck-row .mpc.open { position: relative; }
+  .deck-row .mpc-wrap:has(.mpc.open) { min-height: 0; }
+  /* opened by tap, not hover — don't let a stray :hover re-open the card */
+  .deck-row .mpc { cursor: pointer; }
 }

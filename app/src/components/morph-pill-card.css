@@ -237,10 +237,19 @@
 /* light mode: the rest pill needs its own contrast */
 html:not([data-theme="dark"]) .mpc { background: #fff; border-color: rgba(0, 0, 0, 0.12); }
 html:not([data-theme="dark"]) .mpc-rest { color: #14110e; }
-html:not([data-theme="dark"]) .mpc.open { background: var(--paper2, #141414); }
+/* The open card is a dark surface in BOTH themes, so it must not inherit
+   --paper2 here: in light mode --paper2 is #ebe7dd, which put cream text
+   (#f4f1ea) on a cream panel — the name and bio read as ghosts. Pin the
+   surface to the dark ink value instead of the token. */
+html:not([data-theme="dark"]) .mpc.open { background: #14110e; border-color: rgba(215, 255, 62, 0.35); }
 html:not([data-theme="dark"]) .mpc.open .mpc-name { color: #f4f1ea; }
 html:not([data-theme="dark"]) .mpc.open .mpc-bio { color: rgba(244, 241, 234, 0.7); }
 html:not([data-theme="dark"]) .mpc.open .mpc-price b { color: #f4f1ea; }
+/* secondary ink on the dark card also has to leave the light palette behind */
+html:not([data-theme="dark"]) .mpc.open .mpc-rank,
+html:not([data-theme="dark"]) .mpc.open .mpc-price em { color: rgba(244, 241, 234, 0.55); }
+html:not([data-theme="dark"]) .mpc.open .mpc-foot { border-top-color: rgba(244, 241, 234, 0.16); }
+html:not([data-theme="dark"]) .mpc.open .mpc-delta.flat { color: rgba(244, 241, 234, 0.6); background: rgba(244, 241, 234, 0.1); }
 
 @media (prefers-reduced-motion: reduce) {
   .mpc, .mpc-face, .mpc-info, .mpc-rest { transition: none; }
