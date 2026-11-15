@@ -65,9 +65,11 @@
 }
 /* A closed pill fills its cell instead of hugging its name: collapsing
    .mpc-info (see morph-pill-card.css) made the pill content-width, which left
-   a ragged ~200px void on the right of every desktop cell. Grown via flex, not
-   `width`, so the width transition to the 250px open card is untouched. */
-.deck-row .mpc:not(.open) { flex: 1 1 auto; }
+   a ragged ~200px void on the right of every desktop cell. `width`, not
+   `flex`, because .mpc-wrap is display:block — a flex-grow there did nothing.
+   .mpc.open resets the width to 250px, and the existing width transition
+   interpolates from the resolved 100% value, so the morph still animates. */
+.deck-row .mpc:not(.open) { width: 100%; }
 .deck-row .mpc-wrap:has(.mpc.open) { min-height: 300px; }
 .deck-row .mpc.open {
   position: absolute;
