@@ -1,0 +1,64 @@
+{
+ "dataTheme": "light",
+ "htmlClass": "__variable_ae301a __variable_b19981 __variable_a74ce6",
+ "cardBg": "rgb(20, 17, 14)",
+ "cardW": 250,
+ "cardH": 300,
+ "name": {
+  "color": "rgb(244, 241, 234)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "1",
+  "w": 132,
+  "h": 18
+ },
+ "bio": {
+  "color": "rgba(244, 241, 234, 0.7)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "1",
+  "w": 132,
+  "h": 75
+ },
+ "rank": {
+  "color": "rgba(244, 241, 234, 0.55)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "1",
+  "w": 43,
+  "h": 13
+ },
+ "owner": null,
+ "price": {
+  "color": "rgb(244, 241, 234)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "1",
+  "w": 65,
+  "h": 18
+ },
+ "info": {
+  "color": "rgb(20, 18, 15)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "1",
+  "w": 160,
+  "h": 298
+ },
+ "face": {
+  "color": "rgb(20, 18, 15)",
+  "bg": "rgb(36, 32, 28)",
+  "opacity": "1",
+  "w": 88,
+  "h": 300
+ },
+ "go": {
+  "color": "rgb(11, 11, 11)",
+  "bg": "rgb(215, 255, 62)",
+  "opacity": "1",
+  "w": 59,
+  "h": 26
+ },
+ "rest": {
+  "color": "rgb(20, 17, 14)",
+  "bg": "rgba(0, 0, 0, 0)",
+  "opacity": "0",
+  "w": 0,
+  "h": 298
+ }
+}

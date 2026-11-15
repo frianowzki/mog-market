@@ -115,6 +115,17 @@
 .mpc.open .mpc-rest { opacity: 0; max-width: 0; padding: 0; }
 
 /* ----------------------------------------------------- reveal column */
+/* The info column is always in the flex row, so when the pill is CLOSED it
+   still claimed `flex: 1 1 auto` of the available width and squeezed the name
+   label down to ~28px — "Druski" rendered as "D…" next to a column of empty
+   space. Collapse it fully while closed; it only needs to exist once open. */
+.mpc:not(.open) .mpc-info {
+  flex: 0 0 0;
+  width: 0;
+  max-width: 0;
+  padding-inline: 0;
+  overflow: hidden;
+}
 .mpc-info {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,16 @@
+--- viewport 390 --- docW=1293 vw=390 hOverflow=903
+  div.deck-row w=1263 ovX=auto disp=grid minW=0px cols=150px 150px 150px 150px 150px 150px 150px 150px
+  section.deck-wrap w=1263 ovX=visible disp=block minW=auto cols=none
+  section.pane w=390 ovX=visible disp=grid minW=0px cols=1263px
+  main.main w=390 ovX=visible disp=block minW=0px cols=none
+  div.frame w=390 ovX=visible disp=grid minW=0px cols=390px
+  body. w=390 ovX=hidden disp=block minW=0px cols=none
+  offenders: [{"cls":"agr-field f1","tag":"span","right":515,"w":681},{"cls":"agr-field f2","tag":"span","right":558,"w":694},{"cls":"agr-field f3","tag":"span","right":524,"w":656},{"cls":"agr-field f4","tag":"span","right":506,"w":645},{"cls":"agr-grain","tag":"span","right":601,"w":780},{"cls":"feed-hero","tag":"div","right":1275,"w":1263},{"cls":"","tag":"div","right":872,"w":860},{"cls":"","tag":"h2","right":872,"w":860},{"cls":"feed-meta","tag":"div","right":1135,"w":245},{"cls":"","tag":"span","right":995,"w":105},{"cls":"","tag":"b","right":995,"w":46},{"cls":"","tag":"span","right":1088,"w":79}]
+--- viewport 820 --- docW=1293 vw=820 hOverflow=473
+  div.deck-row w=1263 ovX=auto disp=grid minW=0px cols=150px 150px 150px 150px 150px 150px 150px 150px
+  section.deck-wrap w=1263 ovX=visible disp=block minW=auto cols=none
+  section.pane w=820 ovX=visible disp=grid minW=0px cols=1263px
+  main.main w=820 ovX=visible disp=block minW=0px cols=none
+  div.frame w=820 ovX=visible disp=grid minW=0px cols=820px
+  body. w=820 ovX=hidden disp=block minW=0px cols=none
+  offenders: [{"cls":"agr-field f1","tag":"span","right":1082,"w":1426},{"cls":"agr-field f2","tag":"span","right":1166,"w":1449},{"cls":"agr-field f3","tag":"span","right":1101,"w":1378},{"cls":"agr-field f4","tag":"span","right":1064,"w":1352},{"cls":"agr-grain","tag":"span","right":1197,"w":1640},{"cls":"feed-hero","tag":"div","right":1275,"w":1263},{"cls":"","tag":"div","right":867,"w":855},{"cls":"","tag":"h2","right":867,"w":855},{"cls":"feed-meta","tag":"div","right":1135,"w":250},{"cls":"","tag":"span","right":990,"w":105},{"cls":"","tag":"b","right":990,"w":46},{"cls":"","tag":"span","right":1083,"w":79}]

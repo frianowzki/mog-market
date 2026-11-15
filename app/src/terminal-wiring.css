@@ -63,6 +63,11 @@
   min-height: 40px;
   transition: min-height 300ms ease;
 }
+/* A closed pill fills its cell instead of hugging its name: collapsing
+   .mpc-info (see morph-pill-card.css) made the pill content-width, which left
+   a ragged ~200px void on the right of every desktop cell. Grown via flex, not
+   `width`, so the width transition to the 250px open card is untouched. */
+.deck-row .mpc:not(.open) { flex: 1 1 auto; }
 .deck-row .mpc-wrap:has(.mpc.open) { min-height: 300px; }
 .deck-row .mpc.open {
   position: absolute;
@@ -73,12 +78,11 @@
 
 @media (max-width: 860px) {
   /* touch: no hover, so the deck becomes a horizontal rail the user scrolls.
-     Columns are 250px — the OPEN card's width — so an opened card fills its
-     own cell instead of spilling into and burying the next one (150px columns
-     left the card 100px wider than the cell it grew in). */
+     Columns are sized to their pill's own content (max-content) so each card
+     hugs its name instead of every card claiming a uniform 250px. */
   .deck-row {
     grid-auto-flow: column;
-    grid-auto-columns: 250px;
+    grid-auto-columns: max-content;
     grid-template-columns: none;
     overflow-x: auto;
     scrollbar-width: none;
@@ -87,9 +91,9 @@
     scroll-snap-type: x proximity;
   }
   .deck-row::-webkit-scrollbar { display: none; }
-  /* a 250px-wide tap target beats a 180px pill with a 70px dead gutter */
   .deck-row .mpc-wrap { scroll-snap-align: start; }
-  .deck-row .mpc:not(.open) { width: 100%; }
+  /* mobile: back to content-width so the rail isn't padded with dead cells */
+  .deck-row .mpc:not(.open) { width: 100%; flex: 0 0 auto; }
   /* relative, not absolute: the row has overflow-x:auto, which makes the
      cross axis clip too, so an absolutely placed 300px card inside a 44px
      row would be cut vertically. In flow the row grows instead. */

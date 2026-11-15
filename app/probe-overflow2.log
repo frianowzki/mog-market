@@ -1,0 +1,16 @@
+--- viewport 390 --- docW=390 vw=390 hOverflow=0
+  div.deck-row w=366 ovX=auto disp=grid minW=0px cols=250px 250px 250px 250px 250px 250px 250px 250px
+  section.deck-wrap w=366 ovX=visible disp=block minW=auto cols=none
+  section.pane w=390 ovX=visible disp=grid minW=0px cols=366px
+  main.main w=390 ovX=visible disp=block minW=0px cols=none
+  div.frame w=390 ovX=visible disp=grid minW=0px cols=390px
+  body. w=390 ovX=hidden disp=block minW=0px cols=none
+  offenders: [{"cls":"agr-field f1","tag":"span","right":528,"w":700},{"cls":"agr-field f2","tag":"span","right":559,"w":701},{"cls":"agr-field f3","tag":"span","right":528,"w":662},{"cls":"agr-field f4","tag":"span","right":512,"w":653},{"cls":"agr-grain","tag":"span","right":585,"w":780},{"cls":"mpc-wrap","tag":"div","right":521,"w":250},{"cls":"mpc","tag":"button","right":521,"w":250},{"cls":"mpc-info","tag":"span","right":514,"w":170},{"cls":"mpc-top","tag":"span","right":500,"w":142},{"cls":"mpc-rank num","tag":"span","right":401,"w":43},{"cls":"mpc-delta num flat","tag":"span","right":500,"w":34},{"cls":"mpc-name","tag":"span","right":500,"w":142}]
+--- viewport 820 --- docW=826 vw=820 hOverflow=6
+  div.deck-row w=796 ovX=auto disp=grid minW=0px cols=250px 250px 250px 250px 250px 250px 250px 250px
+  section.deck-wrap w=796 ovX=visible disp=block minW=auto cols=none
+  section.pane w=820 ovX=visible disp=grid minW=0px cols=796px
+  main.main w=820 ovX=visible disp=block minW=0px cols=none
+  div.frame w=820 ovX=visible disp=grid minW=0px cols=820px
+  body. w=820 ovX=hidden disp=block minW=0px cols=none
+  offenders: [{"cls":"agr-field f1","tag":"span","right":1082,"w":1426},{"cls":"agr-field f2","tag":"span","right":1166,"w":1449},{"cls":"agr-field f3","tag":"span","right":1101,"w":1378},{"cls":"agr-field f4","tag":"span","right":1064,"w":1352},{"cls":"agr-grain","tag":"span","right":1197,"w":1640},{"cls":"ss-tip","tag":"span","right":826,"w":70},{"cls":"mpc-wrap","tag":"div","right":1039,"w":250},{"cls":"mpc","tag":"button","right":1039,"w":250},{"cls":"mpc-face","tag":"span","right":829,"w":38},{"cls":"mpc-rest","tag":"span","right":861,"w":31},{"cls":"mpc-info","tag":"span","right":1032,"w":177},{"cls":"mpc-top","tag":"span","right":1018,"w":149}]

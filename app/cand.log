@@ -1,0 +1,8 @@
+d1280 
+  before: {"pillW":339,"rest":{"w":30,"scrollW":58,"text":"Druski"},"truncated":true,"openName":null,"openBio":null,"openH":null} 
+  afterCls: {"pillW":100,"rest":{"w":58,"scrollW":58,"text":"Druski"},"truncated":false,"openName":null,"openBio":null,"openH":null} 
+  afterOpen: {"pillW":166,"rest":{"w":124,"scrollW":124,"text":"Marques Brow"},"truncated":false,"openName":{"w":132,"scrollW":132,"text":"Druski"},"openBio":{"w":132,"scrollW":132,"text":"Drew Desbord"},"openH":300}
+m390 
+  before: {"pillW":250,"rest":{"w":28,"scrollW":58,"text":"Druski"},"truncated":true,"openName":null,"openBio":null,"openH":null} 
+  afterCls: {"pillW":250,"rest":{"w":58,"scrollW":58,"text":"Druski"},"truncated":false,"openName":null,"openBio":null,"openH":null} 
+  afterOpen: {"pillW":250,"rest":{"w":124,"scrollW":124,"text":"Marques Brow"},"truncated":false,"openName":{"w":132,"scrollW":132,"text":"Druski"},"openBio":{"w":132,"scrollW":132,"text":"Drew Desbord"},"openH":300}
