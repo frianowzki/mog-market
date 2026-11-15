@@ -18,7 +18,7 @@
   scroll-snap-type: x proximity;
   perspective: 1400px;
   perspective-origin: 50% 45%;
-  padding: calc(var(--cg-h, 460px) * 0.06) 50vw calc(var(--cg-h, 460px) * 0.09);
+  padding: calc(var(--cg-h, 460px) * 0.06) calc(50% - var(--cg-w, 300px) / 2) calc(var(--cg-h, 460px) * 0.09);
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior-x: contain;

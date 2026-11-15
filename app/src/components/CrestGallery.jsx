@@ -45,14 +45,30 @@ export default function CrestGallery({
   const layout = useCallback(() => {
     const el = track.current;
     if (!el) return;
-    const mid = el.clientWidth / 2;
     const cards = el.querySelectorAll(".cg-card");
+    if (!cards.length) return;
+
+    /* Clear our own transforms first: getBoundingClientRect includes any rotation
+       we wrote on the previous frame, so measuring without resetting compounds.
+       One synchronous reset, then read every rect, then write — cheap at this
+       card count and always correct. */
+    cards.forEach((c) => { c.style.transform = "none"; });
+
+    const box = el.getBoundingClientRect();
+
+    /* First pass: collect centres with transforms cleared. Normalising against
+       the furthest card (not half the viewport) keeps the arc full-range no
+       matter how many cards there are or how wide the viewport gets. */
+    const rects = [];
     cards.forEach((card) => {
       const r = card.getBoundingClientRect();
-      const box = el.getBoundingClientRect();
-      const centre = r.left - box.left + r.width / 2;
-      // −1 at the left edge, 0 dead centre, +1 at the right edge
-      const t = Math.max(-1, Math.min(1, (centre - mid) / (mid || 1)));
+      rects.push(r.left + r.width / 2);
+    });
+    const mid = (box.left + box.width / 2);
+    const reach = Math.max(1, ...rects.map((c) => Math.abs(c - mid)));
+
+    cards.forEach((card, i) => {
+      const t = Math.max(-1, Math.min(1, (rects[i] - mid) / reach));
       const a = Math.abs(t);
       const ry = -t * rotate;
       const z = -a * depth;
@@ -68,10 +84,28 @@ export default function CrestGallery({
   useEffect(() => {
     const el = track.current;
     if (!el) return undefined;
-    // centre the track on mount so the crest opens mid-band
-    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-    layout();
+
+    /* Centre the band, then paint. The scroll assignment must land before the
+       first layout() or every card measures as if the track were at scroll 0,
+       and images that resolve later shift offsetLeft — so we repaint on load too. */
+    const paint = () => {
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+      layout();
+    };
+
+    paint();
     setReady(true);
+
+    // repaint once fonts/images settle (offsetLeft changes when a card grows)
+    const raf1 = requestAnimationFrame(paint);
+    const t1 = setTimeout(paint, 120);
+    const t2 = setTimeout(paint, 600);
+
+    const imgs = el.querySelectorAll("img");
+    const onLoad = () => layout();
+    imgs.forEach((i) => {
+      if (!i.complete) i.addEventListener("load", onLoad, { once: true });
+    });
 
     let raf = 0;
     const onScroll = () => {
@@ -82,11 +116,15 @@ export default function CrestGallery({
       });
     };
     el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", layout);
+    window.addEventListener("resize", paint);
     return () => {
       el.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", layout);
+      window.removeEventListener("resize", paint);
+      imgs.forEach((i) => i.removeEventListener("load", onLoad));
+      cancelAnimationFrame(raf1);
       if (raf) cancelAnimationFrame(raf);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [layout]);
 
