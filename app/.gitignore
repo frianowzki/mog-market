@@ -3,3 +3,6 @@
 # component proof harness output
 proof-*.png
 proof-build/
+
+deploy*.log
+push.log
