@@ -35,11 +35,18 @@ export async function GET(req) {
     return new NextResponse("no verified source for this creator", { status: 404 });
   }
 
+  /* fxtwitter is the only source that returns the real avatar URL, but it is
+     flaky from serverless (cold DNS, occasional 5xx) — so bound it tightly and
+     fall back to the unavatar proxy rather than hanging the avatar request. */
   try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 2500);
     const r = await fetch(`https://api.fxtwitter.com/${handle}`, {
       headers: { "user-agent": "motionmarkets/1.0" },
+      signal: ctl.signal,
       next: { revalidate: 86400 },
     });
+    clearTimeout(t);
     if (r.ok) {
       const d = await r.json();
       const a = d?.user?.avatar_url;
@@ -48,7 +55,7 @@ export async function GET(req) {
         return redirect(a.replace("_normal.", "_400x400."));
       }
     }
-  } catch { /* fall through */ }
+  } catch { /* slow or down → proxy below */ }
 
   return redirect(PROXY + handle);
 }
