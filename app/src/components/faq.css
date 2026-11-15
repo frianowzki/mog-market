@@ -78,7 +78,9 @@
   letter-spacing: 0.12em;
   color: var(--lp-mute, #8f8a83);
   transition: color 240ms ease;
+  white-space: nowrap;
 }
+.faq-q { grid-template-columns: 40px minmax(0, 1fr) 28px; }
 .faq-row.open .faq-idx { color: var(--goo-acc, #d7ff3e); }
 
 .faq-qt {

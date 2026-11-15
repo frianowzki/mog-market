@@ -57,16 +57,18 @@
 }
 .swa-panel:hover .swa-img { transform: scale(1.04); }
 .swa-panel.on .swa-img { filter: saturate(112%) contrast(1.02); }
-.swa-panel:not(.on) .swa-img { filter: saturate(58%) brightness(0.72); }
+.swa-panel:not(.on) .swa-img { filter: saturate(58%) brightness(0.62); }
 
 .swa-tint {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 42%, transparent) 0%, transparent 62%);
-  mix-blend-mode: soft-light;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 22%, transparent) 0%, transparent 58%);
+  mix-blend-mode: overlay;
+  opacity: 0.55;
   pointer-events: none;
 }
+.swa-panel.on .swa-tint { opacity: 0.3; }
 .swa-shade {
   position: absolute;
   inset: 0;

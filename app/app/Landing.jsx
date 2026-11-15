@@ -143,7 +143,7 @@ export default function Landing() {
     rank: r.position,
     name: r.name,
     img: pfpOf(r.id),
-    tint: (Number(r.delta) || 0) > 0 ? "#7dff9b" : (Number(r.delta) || 0) < 0 ? "#ff8a6b" : "#d7ff3e",
+    tint: (Number(r.delta) || 0) > 0 ? "#3f9d5a" : (Number(r.delta) || 0) < 0 ? "#a84b32" : "#8a7f2a",
     bio: (bios[r.name]?.bio || "").trim().slice(0, 170)
       || `#${r.position} on the Motion board. Price is rank-locked, so an upward move in the feed is an upward move in the book.`,
     price: `${money(priceOf(r.position))} FLUENT`,
