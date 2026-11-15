@@ -52,6 +52,11 @@
   width: 250px;
   height: 300px;
   border-radius: 24px;
+  /* the card is a flex row; centring the children leaves .mpc-info at its
+     content height, so `margin-top:auto` on .mpc-foot has no slack and the
+     foot rides up over the price. Stretch makes info fill the 300px and pins
+     the foot to the bottom. */
+  align-items: stretch;
   box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(215, 255, 62, 0.2);
   border-color: color-mix(in srgb, var(--goo-acc, #d7ff3e) 45%, transparent);
   z-index: 30;

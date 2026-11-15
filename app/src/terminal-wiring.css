@@ -54,12 +54,21 @@
   align-items: start;
 }
 
-/* within a cell, the card is normal flow so its growth is contained */
-.deck-row .mpc-wrap { min-height: 40px; }
+/* In-flow growth: the cell reserves the open card's height up front, so the
+   card expands inside its own column and never paints over a neighbour.
+   (Absolutely positioning it meant a 300px card escaping a 40px wrapper.) */
+.deck-row .mpc-wrap {
+  min-height: 40px;
+  transition: min-height 300ms ease;
+}
+.deck-row .mpc-wrap:has(.mpc.open) { min-height: 300px; }
+
+/* the card is a button in normal flow, so the wrapper must not clip it */
+.deck-row .mpc-wrap { display: block; }
 .deck-row .mpc.open {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
+  top: auto;
+  left: auto;
   z-index: 40;
 }
 
