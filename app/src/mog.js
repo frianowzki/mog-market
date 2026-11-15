@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { usePublicClient, useWalletClient, useReadContract } from "wagmi";
+import { usePublicClient, useWalletClient, useReadContract, useBalance } from "wagmi";
 import { keccak256, toHex, formatEther, parseEther } from "viem";
 import artifact from "./MogMarket.json";
 import faucetArtifact from "./MogFaucetV3.json";
@@ -37,15 +37,19 @@ export const BASE_PRICE = 1000n * 10n ** 18n;
 export const priceOf = (rank) => (rank > 0 ? BASE_PRICE / BigInt(rank) : 0n);
 
 /* ---------- Motion leaderboard: display names + profile pictures ----------
-   The on-chain struct only stores name/rank/delta, so identity art comes from
-   the public Motion feed. Creator uuid is NOT derivable from the on-chain id
-   (that's keccak256(name)), so we key the feed by lowercased name. */
+   The on-chain struct only stores name/rank/delta, so identity art and socials
+   come from the public Motion feed. Creator uuid is NOT derivable from the
+   on-chain id (that's keccak256(name)), so we key the feed by lowercased name.
 
-const MOTION_API = "https://leaderboard.motion.game/api/leaderboard";
+   Loaded through our own /api/leaderboard route on purpose: one upstream call
+   server-side (instead of 79 client calls), enriched with each creator's
+   public socials when Motion exposes them. */
+
+const MOTION_API = "/api/leaderboard";
 export const PFP_URL = (uuid) => `https://leaderboard.motion.game/pfp/${uuid}.jpg`;
 
 export function useMotionMeta() {
-  const [meta, setMeta] = useState({});   // lowercase name -> { uuid, name, position }
+  const [meta, setMeta] = useState({});   // lowercase name -> { uuid, name, position, socials }
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -59,6 +63,7 @@ export function useMotionMeta() {
           if (!row?.name) continue;
           next[row.name.trim().toLowerCase()] = {
             uuid: row.id, name: row.name, position: Number(row.position) || 0,
+            socials: row.socials || {},
           };
         }
         setMeta(next);
@@ -70,23 +75,71 @@ export function useMotionMeta() {
 }
 
 
-export function useFluentPrice() {
-  const [usd, setUsd] = useState(FALLBACK_FLUENT_USD);
-  const [source, setSource] = useState("deploy snapshot");
+/* ---------- prices / fx ----------
+   USD spot for FLUENT (dexscreener, mainnet pair) + ETH/USDT/USDC and the
+   fiat table (CoinGecko via /api/rates). Switching display currency is a pure
+   multiply, so it never re-queries the chain. */
+
+const FX_FALLBACK = {
+  usd: FALLBACK_FLUENT_USD,
+  bySymbol: { FLUENT: FALLBACK_FLUENT_USD, BLEND: FALLBACK_FLUENT_USD, ETH: 1813, USDT: 1, USDC: 1 },
+  rates: { USD: 1, IDR: 16100, EUR: 0.92, GBP: 0.79, SGD: 1.34, JPY: 155, INR: 88, MYR: 4.4, AUD: 1.55, CNY: 7.2 },
+  at: null,
+};
+
+export function usePrices() {
+  const [fx, setFx] = useState(FX_FALLBACK);
+  const [source, setSource] = useState("snapshot");
   useEffect(() => {
     let live = true;
     (async () => {
+      const next = { ...FX_FALLBACK, bySymbol: { ...FX_FALLBACK.bySymbol }, rates: { ...FX_FALLBACK.rates } };
+      const src = [];
       try {
         const r = await fetch("https://api.dexscreener.com/tokens/v1/ethereum/0xd8A271974E8EdAE9D7b58e3370dc1669427503F4");
         const pairs = await r.json();
         const best = (Array.isArray(pairs) ? pairs : []).sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
-        if (live && best?.priceUsd) { setUsd(Number(best.priceUsd)); setSource("mainnet · dexscreener"); }
+        if (best?.priceUsd) {
+          const p = Number(best.priceUsd);
+          next.bySymbol.FLUENT = p; next.bySymbol.BLEND = p; next.usd = p;
+          src.push("dexscreener");
+        }
       } catch { /* keep snapshot */ }
+      try {
+        const r = await fetch("/api/rates");
+        if (r.ok) {
+          const d = await r.json();
+          for (const s of ["ETH", "USDT", "USDC"]) {
+            if (d?.bySymbol?.[s]) next.bySymbol[s] = Number(d.bySymbol[s]);
+          }
+          if (d?.rates?.IDR) next.rates = { ...next.rates, ...d.rates };
+          next.at = d.at || null;
+          src.push(d.source || "coingecko");
+        }
+      } catch { /* keep snapshot */ }
+      if (!live) return;
+      setFx(next);
+      setSource(src.join(" · ") || "snapshot");
     })();
     return () => { live = false; };
   }, []);
-  return { usd, source };
+  return { ...fx, source };
 }
+
+/* Fiat formatter for the user's chosen display currency. */
+const ZERO_DEC = new Set(["IDR", "JPY", "KRW", "VND", "CLP", "HUF"]);
+export function makeMoney(rates, currency) {
+  const rate = Number(rates?.[currency] ?? 1);
+  return (usdValue) => {
+    const v = Number(usdValue || 0) * rate;
+    const dec = v >= 1000 || ZERO_DEC.has(currency) ? 0 : v >= 1 ? 2 : 4;
+    const num = v.toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    if (currency === "USD") return "$" + num;
+    if (currency === "IDR") return "Rp " + num;
+    return num + " " + currency;
+  };
+}
+
 
 /* ---------- board ---------- */
 
@@ -153,6 +206,12 @@ export function useFluent(walletAddress) {
     query: { enabled: Boolean(TOKEN && hasWallet), refetchInterval: 20_000 },
   });
 
+  /* Native testnet ETH — gas money, shown next to FLUENT in the wallet card. */
+  const { data: ethBal, refetch: refetchEth } = useBalance({
+    address: walletAddress || undefined,
+    query: { enabled: hasWallet, refetchInterval: 20_000 },
+  });
+
   const { data: claimed, refetch: refetchClaimed } = useReadContract({
     address: FAUCET || undefined, abi: FAUCET_ABI, functionName: "claimed",
     args: walletAddress ? [walletAddress] : undefined,
@@ -182,8 +241,8 @@ export function useFluent(walletAddress) {
   });
 
   const refetchAll = useCallback(async () => {
-    await Promise.all([refetchBal(), refetchClaimed(), refetchCanClaim(), refetchLast()]);
-  }, [refetchBal, refetchClaimed, refetchCanClaim, refetchLast]);
+    await Promise.all([refetchBal(), refetchEth(), refetchClaimed(), refetchCanClaim(), refetchLast()]);
+  }, [refetchBal, refetchEth, refetchClaimed, refetchCanClaim, refetchLast]);
 
   const send = useCallback(async (address, abi, fn, args) => {
     if (!wallet || !walletAddress) throw new Error("wallet not ready");
@@ -213,6 +272,8 @@ export function useFluent(walletAddress) {
   return {
     token: TOKEN,
     balance: balance ?? 0n,
+    ethBalance: ethBal?.value ?? 0n,
+    ethSymbol: ethBal?.symbol || "ETH",
     claimed: Boolean(claimed),
     canClaim: Boolean(canClaim),
     drip: dripTok ?? 0n,

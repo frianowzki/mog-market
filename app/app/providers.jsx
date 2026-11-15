@@ -30,7 +30,7 @@ export default function Providers({ children }) {
           , enable the X login method, then set <b>NEXT_PUBLIC_PRIVY_APP_ID</b> and rebuild.
         </p>
         <p className="num" style={{ fontSize: 11, color: "var(--mute)" }}>
-          optional: NEXT_PUBLIC_CONTRACT_ADDRESS for the deployed MogMarket
+          optional: NEXT_PUBLIC_CONTRACT_ADDRESS for the deployed market contract
         </p>
       </div>
     );
