@@ -14,7 +14,11 @@ import SocialShare from "./components/SocialShare.jsx";
 import SidebarNav from "./components/SidebarNav.jsx";
 import MorphPillCard from "./components/MorphPillCard.jsx";
 import AnimatedGradients from "./components/AnimatedGradients.jsx";
-import ThemeSwitch from "./components/ThemeSwitch.jsx";
+/* NOTE: the Framer ThemeSwitch (components/ThemeSwitch.jsx) is a binary
+   light/dark toggle. The terminal's own ThemeSwitch below supports the
+   three-way auto mode that useTheme().mode relies on, so we keep the local
+   one and do NOT import the component here (a same-name import would be
+   shadowed and dead code). Landing uses the Framer one. */
 import { CountUp, ScrambleText } from "./components/TextMotion.jsx";
 import "./components/expanded-card.css";
 import "./components/tear-ticket.css";
