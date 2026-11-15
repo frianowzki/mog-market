@@ -13,16 +13,25 @@ Port komponen Framer ke app Next.js `mog-market` (landing + terminal), lalu veri
 
 ## Status file
 - Repo: `C:\Users\friok\projects\mog-market` (subdir app = `app/`)
-- Branch: `master`, HEAD = `c947287` (pushed, deployed)
+- Branch: `master`, deployed & verified live
 - Live: https://mog-market.vercel.app — landing 200, /app 200, /api/motion/leaderboard 200 (79 creators)
 - Komponen: `app/src/components/*.jsx` (5 batch-2 sudah terpasang)
 - Wiring landing: `app/app/Landing.jsx`; terminal: `app/src/Terminal.jsx`
 
-## Next steps (prioritas)
-1. **Task aktif user:** bikin route bypass gate `/app?preview=1` (atau `?qa=1`) untuk QA — supaya board + MorphPillCard bisa diverifikasi visual tanpa login X. Harus aman: hanya mengubah tampilan, TIDAK membuka aksi write/tx.
-2. Verifikasi MorphPillCard morph (hover: 40px → card) via Playwright di route preview.
-3. Screenshot board + deck-row sebagai bukti, kirim ke Telegram.
-4. Setelah itu: update skill/checkpoint, commit + push.
+## QA bypass yang SUDAH ADA
+`/app?shot=1` → skip login gate pakai alamat dummy `0x7007...f097`. Bukan route baru, sudah built-in di `Terminal.jsx` (`devShot`). Pakai ini untuk screenshot tanpa login X.
+
+## Bug yang sudah difix & verified
+1. `import ThemeSwitch` di Terminal.jsx di-shadow deklarasi lokal → dibuang.
+2. `.deck-row` kolom `minmax(190px)` → `250px` (lebar card open).
+3. `.mpc.open` kurang `align-items: stretch` → `.mpc-foot` numpuk di atas harga. Fixed.
+4. Card open absolute meluber dari wrapper 40px → wrapper sekarang reservasi `min-height:300px` via `:has(.mpc.open)`.
+   Terukur: card 250×300, wrapper 300px, overlap ke pill lain = **0** (verified via getBoundingClientRect).
+
+## Next steps
+1. Cek halaman lain (Portfolio, Settings) apakah kena isu serupa.
+2. Responsive: `@media (max-width:860px)` pakai `position: relative` — perlu dicek ulang setelah perubahan wrapper.
+3. Screenshot board bisa dipakai buat dokumentasi/README.
 
 ## Catatan teknis
 - acc lime `#d7ff3e`; Landing pakai `--lp-ink/--lp-mute`, Terminal pakai `--ink/--ink2/--mute`
