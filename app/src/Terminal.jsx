@@ -12,12 +12,19 @@ import ExpandedCard from "./components/ExpandedCard.jsx";
 import TearTicket from "./components/TearTicket.jsx";
 import SocialShare from "./components/SocialShare.jsx";
 import SidebarNav from "./components/SidebarNav.jsx";
+import MorphPillCard from "./components/MorphPillCard.jsx";
+import AnimatedGradients from "./components/AnimatedGradients.jsx";
+import ThemeSwitch from "./components/ThemeSwitch.jsx";
 import { CountUp, ScrambleText } from "./components/TextMotion.jsx";
 import "./components/expanded-card.css";
 import "./components/tear-ticket.css";
 import "./components/social-share.css";
 import "./components/sidebar-nav.css";
+import "./components/morph-pill-card.css";
+import "./components/animated-gradients.css";
+import "./components/theme-switch.css";
 import "./terminal-framer.css";
+import "./terminal-wiring.css";
 
 /* ------------------------------------------------------------------ icons */
 
@@ -718,6 +725,10 @@ export function Terminal() {
         </>
       ) : (
         <div className="frame">
+          {/* dashboard backdrop: the same drifting fields as the landing, pulled
+              right back so prices and charts stay the most legible thing on the
+              screen — it is atmosphere, not decoration */}
+          <AnimatedGradients variant="noise" intensity={0.55} speed={38} className="tm-agr" />
           <nav className={"rail" + (isNarrow ? "" : " rail-nav")} aria-label="sections">
             <BrandMark />
             {isNarrow ? (
@@ -1563,6 +1574,34 @@ function FeedView({
       </div>
 
       <HeatStrip rows={rows} holdingMap={holdingMap} onOpen={onOpen} />
+
+      {/* creator deck: the morph pill cards. At rest each is just a portrait
+          disc; hovering morphs it into the trading identity. This is the Feed's
+          discovery surface — the table below stays the precise, sortable view. */}
+      {showcaseRows.length > 0 && (
+        <section className="deck-wrap">
+          <div className="deck-head">
+            <h3>hover a face</h3>
+            <span className="num">top {showcaseRows.length} · price is rank</span>
+          </div>
+          <div className="deck-row">
+            {showcaseRows.map((r) => (
+              <MorphPillCard
+                key={r.id}
+                img={r.id ? PFP_URL(r.id) : null}
+                name={r.name}
+                rank={r.position}
+                price={fmt(priceOf(r.position))}
+                delta={deltaOf(r)}
+                owner={bios[r.name]?.owner}
+                bio={bios[r.name]?.bio || `#${r.position} on the Motion board. Price is rank-locked.`}
+                onOpen={() => onOpen(r.id)}
+                onTrade={() => onOpen(r.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="chips">
         <button className={"chip" + (feedTab === "movers" ? " on" : "")} onClick={() => setFeedTab("movers")}>top movers</button>

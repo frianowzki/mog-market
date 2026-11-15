@@ -1,0 +1,77 @@
+/* Terminal-side wiring for the batch-2 Framer ports.
+   New classes only — the existing styles.css rules are untouched. */
+
+/* --------------------------------------------------- dashboard gradients */
+/* The backdrop sits behind the frame's own surfaces. `.frame` is the grid that
+   holds rail + main + dealer, so the fields are pinned to it and pushed behind
+   everything by z-index; every direct child gets its own stacking context. */
+.frame { position: relative; isolation: isolate; }
+.tm-agr {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+/* ------------------------------------------------------- creator deck */
+.deck-wrap {
+  margin: 18px 0 6px;
+  padding: 0 0 4px;
+}
+.deck-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line2, rgba(255, 255, 255, 0.1));
+}
+.deck-head h3 {
+  margin: 0;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink, #f4f1ea);
+}
+.deck-head .num {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mute, #8f8a83);
+}
+
+/* Grid, not a flex-wrap row: the open card grows to 250px and the grid's
+   auto rows keep every row the same height, so one hover never shifts the
+   others. `align-items: start` stops the closed pills from stretching. */
+.deck-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 9px;
+  align-items: start;
+}
+
+/* within a cell, the card is normal flow so its growth is contained */
+.deck-row .mpc-wrap { min-height: 40px; }
+.deck-row .mpc.open {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 40;
+}
+
+@media (max-width: 860px) {
+  /* touch: no hover, so the deck becomes a horizontal rail the user scrolls */
+  .deck-row {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(150px, 1fr);
+    grid-template-columns: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .deck-row::-webkit-scrollbar { display: none; }
+  .deck-row .mpc.open { position: relative; }
+}

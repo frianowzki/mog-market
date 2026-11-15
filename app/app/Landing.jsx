@@ -8,6 +8,10 @@ import SocialShare from "../src/components/SocialShare.jsx";
 import GooeyNav from "../src/components/GooeyNav.jsx";
 import Faq from "../src/components/Faq.jsx";
 import SwatchAccordion from "../src/components/SwatchAccordion.jsx";
+import LiquidGlassFooter from "../src/components/LiquidGlassFooter.jsx";
+import AnimatedGradients from "../src/components/AnimatedGradients.jsx";
+import ThemeSwitch from "../src/components/ThemeSwitch.jsx";
+import ScrollIndicator from "../src/components/ScrollIndicator.jsx";
 import TextMotion, { CountUp, ScrambleText } from "../src/components/TextMotion.jsx";
 import "../src/components/liquid-glass.css";
 import "../src/components/crest-gallery.css";
@@ -15,6 +19,10 @@ import "../src/components/social-share.css";
 import "../src/components/gooey-nav.css";
 import "../src/components/faq.css";
 import "../src/components/swatch-accordion.css";
+import "../src/components/liquid-glass-footer.css";
+import "../src/components/animated-gradients.css";
+import "../src/components/theme-switch.css";
+import "../src/components/scroll-indicator.css";
 import "./landing.css";
 import "./landing-framer.css";
 import "./landing-wiring.css";
@@ -105,6 +113,26 @@ export default function Landing() {
 
   const img = (r) => pfpOf(r?.id);
   const bg = (r) => (img(r) ? { backgroundImage: `url(${img(r)})` } : { background: "linear-gradient(140deg,#2a2118,#4a3320)" });
+
+  /* theme: landing had no switch of its own — this reads and writes the same
+     localStorage key the boot script in layout.jsx uses, so the landing page and
+     the terminal always agree on which mode is active */
+  const [theme, setThemeState] = useState("dark");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("mm.theme");
+      const dark = saved === "dark"
+        || ((!saved || saved === "auto") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      setThemeState(dark ? "dark" : "light");
+    } catch { /* private mode */ }
+  }, []);
+  const setTheme = (next) => {
+    setThemeState(next);
+    try { localStorage.setItem("mm.theme", next); } catch { /* ignore */ }
+    const r = document.documentElement;
+    r.setAttribute("data-theme", next);
+    r.style.colorScheme = next;
+  };
 
   /* nav sections — the gooey pill tracks whichever one is in view */
   const [nav, setNav] = useState("board");
@@ -200,6 +228,7 @@ export default function Landing() {
   return (
     <div className="lp">
       {/* mist: three drifting, heavily blurred ribbons over near-black */}
+      <AnimatedGradients variant="noise" intensity={0.9} speed={30} className="lp-agr" />
       <div className="lp-mist" aria-hidden="true"><span /><span /><span /></div>
       <div className="lp-grain" aria-hidden="true" />
       <div className="lp-vig" aria-hidden="true" />
@@ -215,9 +244,12 @@ export default function Landing() {
             accent="#d7ff3e"
             brand={<>Motion <i>Markets</i></>}
             right={
-              <Link className="lp-pill solid goo-cta" href="/app">
-                enter terminal <ArrowUpRight />
-              </Link>
+              <>
+                <ThemeSwitch mode={theme} onChange={setTheme} size="sm" label={false} />
+                <Link className="lp-pill solid goo-cta" href="/app">
+                  enter terminal <ArrowUpRight />
+                </Link>
+              </>
             }
           />
         </div>
@@ -264,6 +296,8 @@ export default function Landing() {
             <div className="lp-stat"><b className="num d">{slipping || "—"}</b><span>slipping rank</span></div>
             <div className="lp-stat"><b className="num">1000 ÷ n</b><span>price model</span></div>
           </div>
+
+          <ScrollIndicator label="scroll" />
         </header>
 
         {/* ---------------------------------------------- top movers ribbons */}
@@ -454,14 +488,41 @@ export default function Landing() {
           </div>
         </section>
 
-        <footer className="lp-foot">
-          <span>Motion Markets · Fluent Testnet</span>
-          <span>
-            <a href="https://testnet.fluentscan.xyz" target="_blank" rel="noopener noreferrer">fluentscan ↗</a>
-            {"  ·  "}
-            <a href="https://leaderboard.motion.game" target="_blank" rel="noopener noreferrer">motion leaderboard ↗</a>
-          </span>
-        </footer>
+        <LiquidGlassFooter
+          columns={[
+            {
+              label: "market",
+              items: [
+                { label: "Live board", href: "#board" },
+                { label: "Top movers", href: "#movers" },
+                { label: "Creators", href: "#creators" },
+                { label: "How it works", href: "#how" },
+              ],
+            },
+            {
+              label: "trade",
+              items: [
+                { label: "Open terminal", href: "/app" },
+                { label: "Portfolio", href: "/app?shot=1" },
+                { label: "Faucet", href: "/app?shot=1" },
+                { label: "FAQ", href: "#faq" },
+              ],
+            },
+            {
+              label: "onchain",
+              items: [
+                { label: "Fluentscan", href: "https://testnet.fluentscan.xyz" },
+                { label: "Motion leaderboard", href: "https://leaderboard.motion.game" },
+                { label: "Source", href: "https://github.com/frianowzki/mog-market" },
+                { label: "Fluent testnet", href: "https://fluent.xyz" },
+              ],
+            },
+          ]}
+          onSubscribe={(email) => {
+            // no backend for board alerts yet — the field stays honest about it
+            console.info("[alerts] requested", email);
+          }}
+        />
       </div>
     </div>
   );

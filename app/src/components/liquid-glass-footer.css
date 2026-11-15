@@ -1,0 +1,271 @@
+/* Liquid glass footer — scoped under .lgf.
+
+   The glass is four stacked effects, and you need all four or it reads as a
+   grey box:
+     1. translucent fill (rgba, not a solid)
+     2. backdrop-filter blur + saturation, so what is behind bleeds through
+     3. an inset top highlight — the lit rim along the upper edge
+     4. a large soft outer shadow to seat it on the page
+
+   The oversized wordmark sits *behind* the sheet so the blur has something
+   worth bluring; without it the glass looks flat.
+
+   Layout is a two-row grid: brand/blurb/form on the left, three link columns on
+   the right, then a hairline bottom bar. */
+
+.lgf {
+  position: relative;
+  margin: 56px 0 0;
+  padding: 0;
+  isolation: isolate;
+  font-family: var(--sans, system-ui, sans-serif);
+}
+
+/* -------------------------------------------------------- the glass sheet */
+.lgf-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.075) 0%,
+    rgba(255, 255, 255, 0.028) 42%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(26px) saturate(168%);
+  -webkit-backdrop-filter: blur(26px) saturate(168%);
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.6),
+    0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.18) inset;
+  overflow: hidden;
+  z-index: 0;
+}
+/* the lit rim: a bright arc that only shows along the top edge */
+.lgf-sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 50%;
+  background: radial-gradient(
+    68% 100% at 50% 0%,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 42%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+/* the giant wordmark behind the glass — this is what the blur picks up */
+.lgf-mark {
+  position: absolute;
+  left: 50%;
+  bottom: -0.24em;
+  transform: translateX(-50%);
+  font-family: var(--serif, Georgia, serif);
+  font-size: clamp(96px, 19vw, 260px);
+  line-height: 0.78;
+  letter-spacing: -0.05em;
+  color: var(--goo-acc, #d7ff3e);
+  opacity: 0.11;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- the content */
+.lgf-inner {
+  position: relative;
+  z-index: 1;
+  padding: 30px 32px 20px;
+}
+
+.lgf-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.3fr);
+  gap: 44px;
+  align-items: start;
+}
+
+/* ---------------------------------------------------------------- brand col */
+.lgf-brandcol { display: grid; gap: 13px; max-width: 430px; }
+
+.lgf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--serif, Georgia, serif);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--lp-ink, #f4f1ea);
+}
+.lgf-brand svg { opacity: 0.9; }
+.lgf-brand i { font-style: italic; color: var(--lp-mute, #8f8a83); }
+
+.lgf-blurb {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.62;
+  color: var(--lp-mute, #8f8a83);
+  max-width: 42ch;
+}
+
+/* subscribe: glass input fused to a solid button, one object */
+.lgf-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  width: 100%;
+  max-width: 340px;
+  padding: 4px 4px 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: border-color 220ms ease, background 220ms ease;
+}
+.lgf-sub:focus-within {
+  border-color: color-mix(in srgb, var(--goo-acc, #d7ff3e) 55%, transparent);
+  background: rgba(255, 255, 255, 0.08);
+}
+.lgf-sub input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--lp-ink, #f4f1ea);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 6px 0;
+  outline: none;
+}
+.lgf-sub input::placeholder { color: rgba(244, 241, 234, 0.34); }
+.lgf-sub button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--goo-acc, #d7ff3e);
+  color: #0b0b0b;
+  font: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 200ms ease;
+}
+.lgf-sub button:hover { filter: brightness(1.08); }
+
+.lgf-note {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(244, 241, 234, 0.28);
+}
+
+/* ----------------------------------------------------------------- columns */
+.lgf-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.lgf-col { display: grid; gap: 8px; align-content: start; }
+.lgf-colhead {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(244, 241, 234, 0.34);
+  margin-bottom: 2px;
+}
+.lgf-link {
+  font-size: 11.5px;
+  color: rgba(244, 241, 234, 0.66);
+  text-decoration: none;
+  width: fit-content;
+  transition: color 180ms ease, transform 180ms ease;
+}
+.lgf-link:hover {
+  color: var(--lp-ink, #f4f1ea);
+  transform: translateX(2px);
+}
+
+/* ------------------------------------------------------------ bottom bar */
+.lgf-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 26px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.lgf-copy {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  color: rgba(244, 241, 234, 0.32);
+}
+.lgf-socials { display: inline-flex; gap: 7px; }
+.lgf-soc {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(244, 241, 234, 0.72);
+  transition: background 200ms ease, color 200ms ease, border-color 200ms ease, transform 200ms ease;
+}
+.lgf-soc:hover {
+  background: var(--goo-acc, #d7ff3e);
+  border-color: var(--goo-acc, #d7ff3e);
+  color: #0b0b0b;
+  transform: translateY(-2px);
+}
+
+/* -------------------------------------------------------------- light mode */
+html:not([data-theme="dark"]) .lgf-sheet {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.44) 60%, rgba(255, 255, 255, 0.6) 100%);
+  border-color: rgba(0, 0, 0, 0.09);
+  box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.22), 0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
+}
+html:not([data-theme="dark"]) .lgf-brand,
+html:not([data-theme="dark"]) .lgf-link:hover { color: #14110e; }
+html:not([data-theme="dark"]) .lgf-blurb { color: rgba(20, 17, 14, 0.62); }
+html:not([data-theme="dark"]) .lgf-link { color: rgba(20, 17, 14, 0.6); }
+html:not([data-theme="dark"]) .lgf-colhead,
+html:not([data-theme="dark"]) .lgf-copy { color: rgba(20, 17, 14, 0.42); }
+html:not([data-theme="dark"]) .lgf-sub { background: rgba(0, 0, 0, 0.035); border-color: rgba(0, 0, 0, 0.1); }
+html:not([data-theme="dark"]) .lgf-sub input { color: #14110e; }
+html:not([data-theme="dark"]) .lgf-sub input::placeholder { color: rgba(20, 17, 14, 0.34); }
+html:not([data-theme="dark"]) .lgf-soc { border-color: rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.03); color: rgba(20, 17, 14, 0.66); }
+html:not([data-theme="dark"]) .lgf-bottom { border-top-color: rgba(0, 0, 0, 0.08); }
+html:not([data-theme="dark"]) .lgf-mark { opacity: 0.09; }
+
+/* ------------------------------------------------------------- responsive */
+@media (max-width: 900px) {
+  .lgf-top { grid-template-columns: 1fr; gap: 28px; }
+  .lgf-brandcol { max-width: none; }
+  .lgf-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+}
+@media (max-width: 560px) {
+  .lgf-inner { padding: 24px 20px 16px; }
+  .lgf-sheet { border-radius: 20px; }
+  .lgf-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lgf-bottom { flex-direction: column; align-items: flex-start; gap: 11px; }
+  .lgf-sub { max-width: none; }
+  .lgf-mark { font-size: 27vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lgf-link, .lgf-soc, .lgf-sub { transition: none; }
+}
